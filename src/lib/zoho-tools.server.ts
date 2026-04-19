@@ -100,6 +100,24 @@ async function mailRequest(userId: string, path: string, init?: RequestInit) {
   return r.json();
 }
 
+async function cfFetch(path: string, init?: RequestInit) {
+  const token = process.env.CLOUDFLARE_API_TOKEN;
+  if (!token) throw new Error("CLOUDFLARE_API_TOKEN missing");
+  const r = await fetch(`https://api.cloudflare.com/client/v4${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j?.success === false) {
+    throw new Error(`Cloudflare ${r.status}: ${JSON.stringify(j?.errors ?? j).slice(0, 300)}`);
+  }
+  return j;
+}
+
 export async function executeTool(
   userId: string,
   name: ToolName,
