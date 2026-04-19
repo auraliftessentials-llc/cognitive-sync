@@ -37,6 +37,8 @@ function Projects() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
   const [filter, setFilter] = useState("");
+  const [editing, setEditing] = useState<P | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", status: "active", priority: 3, notes: "" });
 
   const load = async () => {
     if (!user) return;
