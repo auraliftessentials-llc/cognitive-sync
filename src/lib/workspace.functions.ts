@@ -76,28 +76,24 @@ export const getWorkspaceDetail = createServerFn({ method: "POST" })
       : { data: [] };
 
     let invites: any[] = [];
-    if (sa) {
-      const { data } = await supabase
-        .from("workspace_invites")
-        .select("*")
-        .eq("workspace_id", data.workspaceId)
-        .order("created_at", { ascending: false });
-      invites = data ?? [];
-    } else {
+    let canSeeInvites = sa;
+    if (!sa) {
       const { data: ownRole } = await supabase
         .from("workspace_members")
         .select("role")
         .eq("workspace_id", data.workspaceId)
         .eq("user_id", userId)
         .maybeSingle();
-      if ((ownRole as any)?.role === "owner" || (ownRole as any)?.role === "admin") {
-        const { data } = await supabase
-          .from("workspace_invites")
-          .select("*")
-          .eq("workspace_id", data.workspaceId)
-          .order("created_at", { ascending: false });
-        invites = data ?? [];
-      }
+      const r = (ownRole as any)?.role;
+      canSeeInvites = r === "owner" || r === "admin";
+    }
+    if (canSeeInvites) {
+      const { data: inv } = await supabase
+        .from("workspace_invites")
+        .select("*")
+        .eq("workspace_id", data.workspaceId)
+        .order("created_at", { ascending: false });
+      invites = inv ?? [];
     }
 
     const profileByUser = new Map<string, any>();

@@ -67,8 +67,8 @@ export const getFleetAnalytics = createServerFn({ method: "POST" })
     if (wsIds.length) {
       const { data: ws } = await supabase.from("workspaces").select("id, name").in("id", wsIds);
       wsActivity = (ws ?? [])
-        .map((w: any) => ({ name: w.name, projects: wsCount[w.id] ?? 0 }))
-        .sort((a, b) => b.projects - a.projects)
+        .map((w: any) => ({ name: w.name as string, projects: wsCount[w.id] ?? 0 }))
+        .sort((a: { projects: number }, b: { projects: number }) => b.projects - a.projects)
         .slice(0, 10);
     }
 
