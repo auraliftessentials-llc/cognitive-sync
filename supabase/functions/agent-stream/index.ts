@@ -1,6 +1,8 @@
-// Streaming executive agent runner with brain-switching.
-// Auth: requires JWT. Looks up agent, validates model, streams SSE from Lovable AI Gateway,
-// then writes a full agent_runs row with output, duration, and token estimates.
+// Streaming executive agent runner with brain-switching across providers.
+// Routes:
+//   x-ai/*        -> https://api.x.ai/v1 (xAI direct, OpenAI-compatible)
+//   openai/* google/* -> Lovable AI Gateway
+// Auth: requires JWT. Streams SSE in OpenAI delta format and persists the run.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -15,33 +17,27 @@ Deno.serve(async (req) => {
 
   const startedAt = Date.now();
   let runId: string | null = null;
-  let supabaseUser: any = null;
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader) {
-      return json({ error: "Missing Authorization header" }, 401);
-    }
+    if (!authHeader) return json({ error: "Missing Authorization header" }, 401);
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_PUBLISHABLE_KEY =
       Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) return json({ error: "LOVABLE_API_KEY not configured" }, 500);
+    const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
 
-    // User-scoped client (RLS enforced)
     const userClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
     if (userErr || !userData?.user) return json({ error: "Unauthorized" }, 401);
-    supabaseUser = userData.user;
 
     const body = await req.json();
     const { agent_id, prompt, model: modelOverride, workspace_id, history } = body ?? {};
     if (!agent_id || !prompt) return json({ error: "agent_id and prompt required" }, 400);
 
-    // Load agent (RLS will block access if not allowed)
     const { data: agent, error: agentErr } = await userClient
       .from("agents")
       .select("*")
@@ -49,19 +45,26 @@ Deno.serve(async (req) => {
       .single();
     if (agentErr || !agent) return json({ error: "Agent not found" }, 404);
 
-    // Brain switching: validate requested model is in allowed list
     const chosenModel: string =
       modelOverride && agent.available_models.includes(modelOverride)
         ? modelOverride
         : agent.default_model;
 
-    // Create run record (pending)
+    // Provider routing
+    const isGrok = chosenModel.startsWith("x-ai/");
+    if (isGrok && !XAI_API_KEY) {
+      return json({ error: "XAI_API_KEY not configured" }, 500);
+    }
+    if (!isGrok && !LOVABLE_API_KEY) {
+      return json({ error: "LOVABLE_API_KEY not configured" }, 500);
+    }
+
     const { data: run } = await userClient
       .from("agent_runs")
       .insert({
         agent_id,
         workspace_id: workspace_id ?? null,
-        user_id: supabaseUser.id,
+        user_id: userData.user.id,
         model: chosenModel,
         prompt,
         status: "streaming",
@@ -76,20 +79,30 @@ Deno.serve(async (req) => {
       { role: "user", content: prompt },
     ];
 
-    const aiBody: Record<string, unknown> = {
-      model: chosenModel,
-      messages,
-      stream: true,
-    };
-    // Reasoning effort for capable models
-    if (chosenModel.startsWith("openai/gpt-5") || chosenModel.includes("gemini-3")) {
-      aiBody.reasoning = { effort: agent.reasoning_effort ?? "medium" };
+    let endpoint: string;
+    let apiKey: string;
+    let modelForRequest: string;
+    const aiBody: Record<string, unknown> = { messages, stream: true };
+
+    if (isGrok) {
+      endpoint = "https://api.x.ai/v1/chat/completions";
+      apiKey = XAI_API_KEY!;
+      // xAI expects model name without "x-ai/" prefix
+      modelForRequest = chosenModel.replace(/^x-ai\//, "");
+      aiBody.model = modelForRequest;
+    } else {
+      endpoint = "https://ai.gateway.lovable.dev/v1/chat/completions";
+      apiKey = LOVABLE_API_KEY!;
+      aiBody.model = chosenModel;
+      if (chosenModel.startsWith("openai/gpt-5") || chosenModel.includes("gemini-3")) {
+        aiBody.reasoning = { effort: agent.reasoning_effort ?? "medium" };
+      }
     }
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResp = await fetch(endpoint, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(aiBody),
@@ -103,7 +116,10 @@ Deno.serve(async (req) => {
           ? "Rate limit hit, slow down."
           : aiResp.status === 402
             ? "AI credits exhausted — top up in Settings → Workspace → Usage."
-            : "AI gateway error";
+            : aiResp.status === 401
+              ? "Provider rejected the API key."
+              : "AI gateway error";
+      console.error("provider error", aiResp.status, errText.slice(0, 500));
       if (runId) {
         await userClient
           .from("agent_runs")
@@ -113,7 +129,6 @@ Deno.serve(async (req) => {
       return json({ error: friendly }, status);
     }
 
-    // Tee the stream: forward to client, accumulate for DB
     let fullText = "";
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
@@ -123,20 +138,16 @@ Deno.serve(async (req) => {
         const reader = aiResp.body!.getReader();
         let buffer = "";
         try {
-          // Send a meta event first with run id + model
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ meta: { run_id: runId, model: chosenModel, agent: agent.name } })}\n\n`,
+              `data: ${JSON.stringify({ meta: { run_id: runId, model: chosenModel, agent: agent.name, provider: isGrok ? "xai" : "lovable" } })}\n\n`,
             ),
           );
-
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            // Forward raw chunk to client
             controller.enqueue(value);
             buffer += decoder.decode(value, { stream: true });
-
             let idx;
             while ((idx = buffer.indexOf("\n")) !== -1) {
               let line = buffer.slice(0, idx);
@@ -149,16 +160,13 @@ Deno.serve(async (req) => {
                 const parsed = JSON.parse(payload);
                 const c = parsed.choices?.[0]?.delta?.content;
                 if (c) fullText += c;
-              } catch {
-                // ignore partial
-              }
+              } catch { /* partial */ }
             }
           }
         } catch (e) {
           console.error("stream error", e);
         } finally {
           controller.close();
-          // Persist run result
           if (runId) {
             const duration = Date.now() - startedAt;
             await userClient

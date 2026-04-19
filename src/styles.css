@@ -115,3 +115,51 @@
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in-up { animation: fade-in-up 0.4s ease-out both; }
+
+/* Merkabah counter-rotation */
+@keyframes merkabah-spin-cw {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes merkabah-spin-ccw {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+
+/* Sacred-blue brand accents (additive, doesn't replace neural-green primary) */
+:root {
+  --brand-blue:       oklch(0.72 0.18 240);
+  --brand-blue-glow:  oklch(0.85 0.18 230 / 0.55);
+  --brand-cyan:       oklch(0.85 0.15 200);
+  --gradient-merkabah: linear-gradient(135deg,
+    oklch(0.72 0.18 240) 0%,
+    oklch(0.85 0.15 200) 50%,
+    oklch(0.78 0.18 155) 100%);
+}
+
+.text-brand-blue { color: var(--brand-blue); }
+.bg-brand-blue   { background: var(--brand-blue); }
+.border-brand-blue { border-color: var(--brand-blue); }
+.glow-brand-blue { text-shadow: 0 0 24px var(--brand-blue-glow); }
+.merkabah-gradient { background: var(--gradient-merkabah); }
+.merkabah-text {
+  background: var(--gradient-merkabah);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Auto-scaling textarea — font/line-height fluidly track viewport
+   so the chat input never feels stuck at one size on big screens. */
+.fluid-input {
+  font-size: clamp(0.95rem, 0.7rem + 0.55vw, 1.25rem);
+  line-height: 1.55;
+}
+.fluid-display {
+  font-size: clamp(1.5rem, 0.9rem + 1.6vw, 2.6rem);
+  line-height: 1.05;
+}
+.fluid-body {
+  font-size: clamp(0.875rem, 0.78rem + 0.2vw, 1.05rem);
+  line-height: 1.6;
+}
