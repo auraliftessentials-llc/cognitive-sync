@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Brain, FolderGit2, MessageSquare, Sparkles, User, LogOut, Github, Crown, Building2, ChevronDown } from "lucide-react";
+import { Brain, FolderGit2, MessageSquare, Sparkles, User, LogOut, Github, Crown, Building2, ChevronDown, Bot } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useWorkspace } from "@/lib/workspace-context";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ const navItems = [
   { to: "/projects", label: "Library", icon: FolderGit2 },
   { to: "/suggestions", label: "Moves", icon: Sparkles },
   { to: "/chat", label: "Brain", icon: MessageSquare },
+  { to: "/agents", label: "Agents", icon: Bot },
   { to: "/github", label: "GitHub", icon: Github },
   { to: "/profile", label: "Profile", icon: User },
 ] as const;

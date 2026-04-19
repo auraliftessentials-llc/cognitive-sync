@@ -14,6 +14,128 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_runs: {
+        Row: {
+          agent_id: string
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          id: string
+          model: string
+          output: string | null
+          prompt: string
+          status: string
+          tokens_in: number | null
+          tokens_out: number | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          model: string
+          output?: string | null
+          prompt: string
+          status?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          model?: string
+          output?: string | null
+          prompt?: string
+          status?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_runs_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_runs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agents: {
+        Row: {
+          available_models: string[]
+          created_at: string
+          default_model: string
+          emoji: string
+          id: string
+          is_system: boolean
+          name: string
+          reasoning_effort: string
+          role: string
+          slug: string
+          system_prompt: string
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          available_models?: string[]
+          created_at?: string
+          default_model?: string
+          emoji?: string
+          id?: string
+          is_system?: boolean
+          name: string
+          reasoning_effort?: string
+          role: string
+          slug: string
+          system_prompt: string
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          available_models?: string[]
+          created_at?: string
+          default_model?: string
+          emoji?: string
+          id?: string
+          is_system?: boolean
+          name?: string
+          reasoning_effort?: string
+          role?: string
+          slug?: string
+          system_prompt?: string
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agents_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
