@@ -16,7 +16,7 @@ const nav = [
 export function AppShell({ children }: { children: ReactNode }) {
   const loc = useLocation();
   const nav2 = useNavigate();
-  const { signOut, user } = useAuth();
+  const { signOut, user, isSuperAdmin, isAdmin } = useAuth();
 
   return (
     <div className="min-h-screen flex">
