@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useWorkspace } from "@/lib/workspace-context";
 import { Button } from "@/components/ui/button";
 import { CommandPalette } from "@/components/CommandPalette";
+import { BrainStatusBar } from "@/components/BrainStatusBar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -90,6 +91,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
           )}
         </nav>
+
+        <BrainStatusBar />
 
         <div className="border-t border-border pt-3 mt-3">
           <div className="flex items-center gap-2 px-2 mb-2">
