@@ -53,7 +53,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="border-t border-border pt-3 mt-3">
-          <div className="text-xs text-muted-foreground truncate px-2 mb-2">{user?.email}</div>
+          <div className="flex items-center gap-2 px-2 mb-2">
+            <div className="text-xs text-muted-foreground truncate flex-1">{user?.email}</div>
+            {isSuperAdmin ? (
+              <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/20 text-primary border border-primary/40 font-display">
+                super
+              </span>
+            ) : isAdmin ? (
+              <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-muted text-foreground border border-border font-display">
+                admin
+              </span>
+            ) : null}
+          </div>
           <Button
             variant="ghost"
             size="sm"
