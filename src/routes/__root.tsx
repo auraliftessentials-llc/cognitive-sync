@@ -1,6 +1,7 @@
 import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/lib/auth-context";
+import { WorkspaceProvider } from "@/lib/workspace-context";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
@@ -81,8 +82,10 @@ function RootComponent() {
   return (
     <AuthProvider>
       <AuthHeaderInjector />
-      <Outlet />
-      <Toaster richColors theme="dark" />
+      <WorkspaceProvider>
+        <Outlet />
+        <Toaster richColors theme="dark" />
+      </WorkspaceProvider>
     </AuthProvider>
   );
 }
