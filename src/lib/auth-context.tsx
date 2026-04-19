@@ -2,10 +2,15 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
+type Role = "super_admin" | "admin" | "user";
+
 type AuthCtx = {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  roles: Role[];
+  isSuperAdmin: boolean;
+  isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -17,16 +22,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [roles, setRoles] = useState<Role[]>([]);
+
+  const loadRoles = async (uid: string | undefined) => {
+    if (!uid) return setRoles([]);
+    const { data } = await supabase.from("user_roles" as any).select("role").eq("user_id", uid);
+    setRoles(((data as any[]) ?? []).map((r) => r.role as Role));
+  };
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
+      // defer to avoid deadlock inside the auth callback
+      setTimeout(() => loadRoles(s?.user?.id), 0);
     });
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
-      setLoading(false);
+      loadRoles(s?.user?.id).finally(() => setLoading(false));
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -47,9 +61,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  return (
-    <Ctx.Provider value={{ user, session, loading, signIn, signUp, signOut }}>{children}</Ctx.Provider>
-  );
+  const value: AuthCtx = {
+    user,
+    session,
+    loading,
+    roles,
+    isSuperAdmin: roles.includes("super_admin"),
+    isAdmin: roles.includes("admin") || roles.includes("super_admin"),
+    signIn,
+    signUp,
+    signOut,
+  };
+
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() {
