@@ -243,47 +243,65 @@ function AgentsInner() {
   }
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto">
-      <header className="mb-6 flex items-end justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="font-display text-3xl tracking-wider flex items-center gap-2">
-            <Brain className="h-7 w-7 text-primary" />
-            EXECUTIVE AGENTS
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Brain-switching AI specialists. Pick a persona, pick a brain, ship.
-          </p>
+    <div className="p-6 lg:p-8 max-w-[1800px] mx-auto">
+      <header className="mb-8 flex items-end justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-4">
+          <Merkabah size={56} />
+          <div>
+            <h1 className="font-display fluid-display tracking-[0.14em] merkabah-text font-semibold">
+              EXECUTIVE AGENTS
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1 fluid-body">
+              Brain-switching specialists. Pick a persona, pick a brain, ship.
+            </p>
+          </div>
         </div>
-        <Badge variant="outline" className="border-primary/40 text-primary">
-          <Zap className="h-3 w-3 mr-1" /> Live · Realtime feed
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="border-brand-blue/50 text-brand-blue glow-brand-blue">
+            <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-brand-blue animate-pulse" />
+            xAI · Live
+          </Badge>
+          <Badge variant="outline" className="border-primary/40 text-primary">
+            <Zap className="h-3 w-3 mr-1" /> Realtime feed
+          </Badge>
+        </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_320px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr_340px] gap-6">
         {/* Agent picker */}
         <aside className="space-y-2">
-          <div className="text-xs uppercase tracking-wider text-muted-foreground px-1 mb-2">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground px-1 mb-2">
             Personas
           </div>
           {agents.map((a) => {
             const isActive = a.id === activeId;
+            const isCEO = a.slug === "ceo-grok";
             return (
               <button
                 key={a.id}
                 onClick={() => setActiveId(a.id)}
-                className={`w-full text-left rounded-lg border px-3 py-3 transition-all ${
+                className={`w-full text-left rounded-xl border px-3 py-3 transition-all duration-200 ${
                   isActive
-                    ? "border-primary/60 bg-primary/10 glow-text"
-                    : "border-border hover:border-primary/30 hover:bg-muted/40"
+                    ? isCEO
+                      ? "border-brand-blue/70 bg-brand-blue/10 shadow-[0_0_30px_-8px_var(--brand-blue-glow)]"
+                      : "border-primary/60 bg-primary/10 glow-text shadow-[0_0_25px_-10px_var(--glow)]"
+                    : "border-border hover:border-primary/30 hover:bg-muted/40 hover:translate-x-0.5"
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{a.emoji}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl shrink-0">{a.emoji}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{a.name}</div>
-                    <div className="text-xs text-muted-foreground truncate">{a.role}</div>
+                    <div className={`font-medium truncate ${isCEO && isActive ? "merkabah-text" : ""}`}>
+                      {a.name}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground truncate">{a.role}</div>
                   </div>
-                  {a.is_system && (
+                  {isCEO && (
+                    <Badge className="text-[9px] px-1.5 py-0 bg-brand-blue/20 text-brand-blue border-brand-blue/40 border">
+                      xAI
+                    </Badge>
+                  )}
+                  {a.is_system && !isCEO && (
                     <Badge variant="outline" className="text-[9px] px-1 py-0">SYS</Badge>
                   )}
                 </div>
@@ -296,25 +314,32 @@ function AgentsInner() {
         <main className="space-y-4 min-w-0">
           {active ? (
             <>
-              <Card className="p-4 border-primary/20">
+              <Card className={`p-5 border-2 ${active.slug === "ceo-grok" ? "border-brand-blue/30 bg-gradient-to-br from-brand-blue/[0.04] to-transparent" : "border-primary/20"}`}>
                 <div className="flex items-center gap-3 mb-3 flex-wrap">
-                  <span className="text-3xl">{active.emoji}</span>
+                  <span className="text-4xl">{active.emoji}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="font-display tracking-wider">{active.name.toUpperCase()}</div>
+                    <div className={`font-display tracking-[0.12em] text-lg ${active.slug === "ceo-grok" ? "merkabah-text" : ""}`}>
+                      {active.name.toUpperCase()}
+                    </div>
                     <div className="text-xs text-muted-foreground">{active.role}</div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                       <Sparkles className="h-3 w-3" /> Brain
                     </span>
                     <Select value={model} onValueChange={setModel}>
-                      <SelectTrigger className="h-8 w-[230px] text-xs">
+                      <SelectTrigger className="h-9 w-[260px] text-xs bg-background/60 backdrop-blur">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {active.available_models.map((m) => (
                           <SelectItem key={m} value={m} className="text-xs">
-                            {MODEL_LABELS[m] ?? m}
+                            <span className="flex items-center gap-2">
+                              {m.startsWith("x-ai/") && (
+                                <span className="text-brand-blue font-bold">𝕏</span>
+                              )}
+                              {MODEL_LABELS[m] ?? m}
+                            </span>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -328,25 +353,25 @@ function AgentsInner() {
 
               {/* Conversation transcript */}
               {(history.length > 0 || output) && (
-                <Card className="p-4 max-h-[420px] overflow-auto space-y-4">
+                <Card className="p-5 max-h-[480px] overflow-auto space-y-5">
                   {history.map((m, i) => (
-                    <div key={i}>
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                    <div key={i} className="animate-fade-in-up">
+                      <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2">
                         {m.role === "user" ? "You" : active.name}
                       </div>
-                      <div className="prose prose-sm prose-invert max-w-none text-sm">
+                      <div className="prose prose-invert max-w-none fluid-body">
                         <ReactMarkdown>{m.content}</ReactMarkdown>
                       </div>
-                      <Separator className="mt-3" />
+                      <Separator className="mt-4" />
                     </div>
                   ))}
                   {output && (
-                    <div>
-                      <div className="text-[10px] uppercase tracking-wider text-primary mb-1 flex items-center gap-1">
+                    <div className="animate-fade-in-up">
+                      <div className="text-[10px] uppercase tracking-[0.2em] text-primary mb-2 flex items-center gap-2">
                         {active.name}
                         {streaming && <Loader2 className="h-3 w-3 animate-spin" />}
                       </div>
-                      <div className="prose prose-sm prose-invert max-w-none text-sm">
+                      <div className="prose prose-invert max-w-none fluid-body">
                         <ReactMarkdown>{output}</ReactMarkdown>
                       </div>
                     </div>
@@ -355,12 +380,12 @@ function AgentsInner() {
               )}
 
               {/* Composer */}
-              <Card className="p-3">
+              <Card className="p-4 border-primary/10 backdrop-blur">
                 <Textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder={`Ask ${active.name} anything…`}
-                  className="min-h-[100px] border-0 focus-visible:ring-0 resize-none"
+                  className="min-h-[120px] border-0 focus-visible:ring-0 resize-none fluid-input bg-transparent px-1"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                       e.preventDefault();
