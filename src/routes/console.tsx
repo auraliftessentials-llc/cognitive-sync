@@ -176,8 +176,8 @@ function ConsoleScreen() {
       });
       setHistory((h) => [
         ...h,
-        { role: "user", content: text },
-        { role: "assistant", content: res.output },
+        { role: "user" as const, content: text },
+        { role: "assistant" as const, content: res.output },
       ].slice(-12));
     } catch (e: any) {
       push({ kind: "error", text: e?.message ?? "Console error" });
