@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -23,23 +22,25 @@ export const getAdminOverview = createServerFn({ method: "POST" })
     const { supabase, userId } = context as any;
     await assertSuperAdmin(supabase, userId);
 
-    // List all auth users via admin client
-    const { data: usersList, error: usersErr } = await supabaseAdmin.auth.admin.listUsers({
-      page: 1,
-      perPage: 1000,
-    });
+    // List users via SECURITY DEFINER RPC (bypasses need for service role)
+    const { data: usersList, error: usersErr } = await supabase.rpc("admin_list_users");
     if (usersErr) throw new Error(usersErr.message);
+    const users = (usersList ?? []) as Array<{
+      id: string;
+      email: string | null;
+      created_at: string;
+      last_sign_in_at: string | null;
+      email_confirmed_at: string | null;
+    }>;
 
-    const users = usersList?.users ?? [];
-
-    // Roles, projects, profiles, suggestions, conversations (admin bypass for global view)
+    // Admin RLS policies allow super_admin to read all of these
     const [rolesRes, projectsRes, profilesRes, suggestionsRes, convRes, msgRes] = await Promise.all([
-      supabaseAdmin.from("user_roles").select("user_id, role"),
-      supabaseAdmin.from("projects").select("id, user_id, status, priority, last_worked_on, updated_at, name"),
-      supabaseAdmin.from("profiles").select("user_id, display_name, avatar_url, skills, focus_areas"),
-      supabaseAdmin.from("suggestions").select("id, user_id, dismissed, created_at"),
-      supabaseAdmin.from("conversations").select("id, user_id, updated_at"),
-      supabaseAdmin.from("messages").select("id, user_id, created_at"),
+      supabase.from("user_roles").select("user_id, role"),
+      supabase.from("projects").select("id, user_id, status, priority, last_worked_on, updated_at, name"),
+      supabase.from("profiles").select("user_id, display_name, avatar_url, skills, focus_areas"),
+      supabase.from("suggestions").select("id, user_id, dismissed, created_at"),
+      supabase.from("conversations").select("id, user_id, updated_at"),
+      supabase.from("messages").select("id, user_id, created_at"),
     ]);
 
     const rolesByUser = new Map<string, string[]>();
@@ -69,7 +70,7 @@ export const getAdminOverview = createServerFn({ method: "POST" })
       msgCountByUser.set(m.user_id, (msgCountByUser.get(m.user_id) ?? 0) + 1);
     });
 
-    const enriched = users.map((u: any) => {
+    const enriched = users.map((u) => {
       const projects = projectsByUser.get(u.id) ?? [];
       const profile = profileByUser.get(u.id);
       return {
@@ -77,7 +78,7 @@ export const getAdminOverview = createServerFn({ method: "POST" })
         email: u.email ?? "(no email)",
         created_at: u.created_at,
         last_sign_in_at: u.last_sign_in_at,
-        confirmed: !!u.email_confirmed_at || !!u.confirmed_at,
+        confirmed: !!u.email_confirmed_at,
         roles: rolesByUser.get(u.id) ?? [],
         display_name: profile?.display_name ?? null,
         avatar_url: profile?.avatar_url ?? null,
@@ -94,14 +95,13 @@ export const getAdminOverview = createServerFn({ method: "POST" })
       };
     });
 
-    // System-wide stats
     const allProjects = projectsRes.data ?? [];
     const stats = {
       total_users: users.length,
       total_super_admins: enriched.filter((u) => u.roles.includes("super_admin")).length,
       total_admins: enriched.filter((u) => u.roles.includes("admin")).length,
       active_last_7d: users.filter(
-        (u: any) =>
+        (u) =>
           u.last_sign_in_at &&
           Date.now() - new Date(u.last_sign_in_at).getTime() < 7 * 24 * 60 * 60 * 1000,
       ).length,
@@ -112,7 +112,6 @@ export const getAdminOverview = createServerFn({ method: "POST" })
       total_suggestions: (suggestionsRes.data ?? []).length,
     };
 
-    // Top projects by recency (global)
     const recentProjects = [...allProjects]
       .sort((a: any, b: any) => {
         const aT = new Date(a.last_worked_on || a.updated_at).getTime();
@@ -135,9 +134,8 @@ export const setUserRole = createServerFn({ method: "POST" })
     await assertSuperAdmin(supabase, userId);
 
     if (data.action === "revoke") {
-      // Prevent revoking your own super_admin if you're the last one
       if (data.role === "super_admin" && data.targetUserId === userId) {
-        const { data: supers } = await supabaseAdmin
+        const { data: supers } = await supabase
           .from("user_roles")
           .select("user_id")
           .eq("role", "super_admin");
@@ -145,7 +143,7 @@ export const setUserRole = createServerFn({ method: "POST" })
           throw new Error("Cannot revoke the last super_admin (yourself).");
         }
       }
-      const { error } = await supabaseAdmin
+      const { error } = await supabase
         .from("user_roles")
         .delete()
         .eq("user_id", data.targetUserId)
@@ -154,15 +152,14 @@ export const setUserRole = createServerFn({ method: "POST" })
       return { ok: true, action: "revoked" };
     }
 
-    // grant
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from("user_roles")
       .insert({ user_id: data.targetUserId, role: data.role });
-    if (error && !error.message.includes("duplicate")) throw new Error(error.message);
+    if (error && !error.message.toLowerCase().includes("duplicate")) throw new Error(error.message);
     return { ok: true, action: "granted" };
   });
 
-// Delete a user entirely
+// Delete a user entirely (via SECURITY DEFINER rpc)
 export const deleteUserAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { targetUserId: string }) => d)
@@ -170,12 +167,12 @@ export const deleteUserAccount = createServerFn({ method: "POST" })
     const { supabase, userId } = context as any;
     await assertSuperAdmin(supabase, userId);
     if (data.targetUserId === userId) throw new Error("Cannot delete your own account.");
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.targetUserId);
+    const { error } = await supabase.rpc("admin_delete_user", { _target: data.targetUserId });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
-// AI-powered Fleet Insights — analyzes the entire system
+// AI-powered Fleet Insights
 export const generateFleetInsights = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -186,14 +183,14 @@ export const generateFleetInsights = createServerFn({ method: "POST" })
     if (!key) throw new Error("LOVABLE_API_KEY is not configured");
 
     const [usersRes, projectsRes, suggRes] = await Promise.all([
-      supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
-      supabaseAdmin.from("projects").select("name, status, priority, tech_stack, tags, last_worked_on"),
-      supabaseAdmin.from("suggestions").select("title, kind, dismissed"),
+      supabase.rpc("admin_list_users"),
+      supabase.from("projects").select("name, status, priority, tech_stack, tags, last_worked_on"),
+      supabase.from("suggestions").select("title, kind, dismissed"),
     ]);
 
-    const users = usersRes.data?.users ?? [];
-    const projects = projectsRes.data ?? [];
-    const sugg = suggRes.data ?? [];
+    const users = (usersRes.data ?? []) as any[];
+    const projects = (projectsRes.data ?? []) as any[];
+    const sugg = (suggRes.data ?? []) as any[];
 
     const techCount: Record<string, number> = {};
     projects.forEach((p: any) =>
