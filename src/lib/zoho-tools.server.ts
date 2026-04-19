@@ -170,6 +170,79 @@ export async function executeTool(
           ],
         },
       };
+    case "web_research": {
+      const key = process.env.PERPLEXITY_API_KEY;
+      if (!key) throw new Error("PERPLEXITY_API_KEY missing");
+      const recency = ["day", "week", "month", "year"].includes(args.recency) ? args.recency : "week";
+      const r = await fetch("https://api.perplexity.ai/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: args.deep ? "sonar-pro" : "sonar",
+          messages: [
+            { role: "system", content: "Be precise, concise, and cite sources inline. Return facts the operator can act on." },
+            { role: "user", content: String(args.query ?? "") },
+          ],
+          search_recency_filter: recency,
+          temperature: 0.2,
+        }),
+      });
+      if (!r.ok) throw new Error(`Perplexity ${r.status}: ${(await r.text()).slice(0, 300)}`);
+      const j = await r.json();
+      return {
+        answer: j.choices?.[0]?.message?.content ?? "",
+        citations: j.citations ?? [],
+        model: j.model,
+      };
+    }
+    case "cloudflare_list_zones": {
+      const j = await cfFetch(`/zones?per_page=${args.limit ?? 25}`);
+      return { zones: (j.result ?? []).map((z: any) => ({ id: z.id, name: z.name, status: z.status, plan: z.plan?.name })) };
+    }
+    case "cloudflare_list_dns": {
+      if (!args.zone_id) throw new Error("zone_id required");
+      const j = await cfFetch(`/zones/${args.zone_id}/dns_records?per_page=${args.limit ?? 50}`);
+      return { records: (j.result ?? []).map((r: any) => ({ id: r.id, type: r.type, name: r.name, content: r.content, proxied: r.proxied, ttl: r.ttl })) };
+    }
+    case "cloudflare_create_dns": {
+      if (!args.zone_id || !args.type || !args.name || !args.content) throw new Error("zone_id, type, name, content required");
+      const j = await cfFetch(`/zones/${args.zone_id}/dns_records`, {
+        method: "POST",
+        body: JSON.stringify({
+          type: args.type, name: args.name, content: args.content,
+          ttl: args.ttl ?? 1, proxied: args.proxied ?? true,
+        }),
+      });
+      return j.result;
+    }
+    case "cloudflare_purge_cache": {
+      if (!args.zone_id) throw new Error("zone_id required");
+      const body = args.urls?.length ? { files: args.urls } : { purge_everything: true };
+      const j = await cfFetch(`/zones/${args.zone_id}/purge_cache`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      return j.result;
+    }
+    case "cloudflare_workers_ai": {
+      const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+      const token = process.env.CLOUDFLARE_API_TOKEN;
+      if (!accountId || !token) throw new Error("CLOUDFLARE_ACCOUNT_ID + CLOUDFLARE_API_TOKEN required");
+      const model = args.model ?? "@cf/meta/llama-3.1-8b-instruct";
+      const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: args.system ?? "You are a precise assistant." },
+            { role: "user", content: String(args.prompt ?? "") },
+          ],
+        }),
+      });
+      if (!r.ok) throw new Error(`Cloudflare AI ${r.status}: ${(await r.text()).slice(0, 300)}`);
+      const j = await r.json();
+      return { model, response: j.result?.response ?? j };
+    }
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
