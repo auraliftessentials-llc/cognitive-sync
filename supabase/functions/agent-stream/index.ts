@@ -1,7 +1,9 @@
-// Streaming executive agent runner with brain-switching across providers.
-// Routes:
-//   x-ai/*        -> https://api.x.ai/v1 (xAI direct, OpenAI-compatible)
-//   openai/* google/* -> Lovable AI Gateway
+// Streaming executive agent runner with brain-switching + automatic fallback.
+// Fallback chain: chosen model -> remaining of [xAI, Lovable/openai, Lovable/google].
+// On 401/402/403/429/5xx for the first provider, transparently re-tries the
+// next one in the chain and emits a `meta.fallback` SSE event so the UI can
+// surface "Grok unavailable, fell back to GPT-5".
+//
 // Auth: requires JWT. Streams SSE in OpenAI delta format and persists the run.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -11,6 +13,48 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+type ProviderId = "xai" | "lovable-openai" | "lovable-google";
+
+type ProviderDef = {
+  id: ProviderId;
+  model: string;
+  endpoint: string;
+  apiKeyEnv: string;
+  modelOnWire: string;
+};
+
+const PROVIDERS: Record<ProviderId, ProviderDef> = {
+  xai: {
+    id: "xai",
+    model: "x-ai/grok-4",
+    endpoint: "https://api.x.ai/v1/chat/completions",
+    apiKeyEnv: "XAI_API_KEY",
+    modelOnWire: "grok-4",
+  },
+  "lovable-openai": {
+    id: "lovable-openai",
+    model: "openai/gpt-5",
+    endpoint: "https://ai.gateway.lovable.dev/v1/chat/completions",
+    apiKeyEnv: "LOVABLE_API_KEY",
+    modelOnWire: "openai/gpt-5",
+  },
+  "lovable-google": {
+    id: "lovable-google",
+    model: "google/gemini-3-flash-preview",
+    endpoint: "https://ai.gateway.lovable.dev/v1/chat/completions",
+    apiKeyEnv: "LOVABLE_API_KEY",
+    modelOnWire: "google/gemini-3-flash-preview",
+  },
+};
+
+const DEFAULT_CHAIN: ProviderId[] = ["xai", "lovable-openai", "lovable-google"];
+
+function resolveChain(preferredModel: string): ProviderId[] {
+  const direct = (Object.values(PROVIDERS).find((p) => p.model === preferredModel)?.id) as ProviderId | undefined;
+  if (!direct) return DEFAULT_CHAIN;
+  return [direct, ...DEFAULT_CHAIN.filter((id) => id !== direct)];
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -25,8 +69,6 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_PUBLISHABLE_KEY =
       Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!;
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
 
     const userClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
       global: { headers: { Authorization: authHeader } },
@@ -45,19 +87,12 @@ Deno.serve(async (req) => {
       .single();
     if (agentErr || !agent) return json({ error: "Agent not found" }, 404);
 
-    const chosenModel: string =
+    const preferredModel: string =
       modelOverride && agent.available_models.includes(modelOverride)
         ? modelOverride
         : agent.default_model;
 
-    // Provider routing
-    const isGrok = chosenModel.startsWith("x-ai/");
-    if (isGrok && !XAI_API_KEY) {
-      return json({ error: "XAI_API_KEY not configured" }, 500);
-    }
-    if (!isGrok && !LOVABLE_API_KEY) {
-      return json({ error: "LOVABLE_API_KEY not configured" }, 500);
-    }
+    const chain = resolveChain(preferredModel);
 
     const { data: run } = await userClient
       .from("agent_runs")
@@ -65,7 +100,7 @@ Deno.serve(async (req) => {
         agent_id,
         workspace_id: workspace_id ?? null,
         user_id: userData.user.id,
-        model: chosenModel,
+        model: preferredModel,
         prompt,
         status: "streaming",
       })
@@ -79,54 +114,51 @@ Deno.serve(async (req) => {
       { role: "user", content: prompt },
     ];
 
-    let endpoint: string;
-    let apiKey: string;
-    let modelForRequest: string;
-    const aiBody: Record<string, unknown> = { messages, stream: true };
+    // Try each provider in chain until one returns a usable streaming body.
+    const fallbackTrail: { provider: ProviderId; status: number; error: string }[] = [];
+    let chosen: { provider: ProviderDef; resp: Response } | null = null;
 
-    if (isGrok) {
-      endpoint = "https://api.x.ai/v1/chat/completions";
-      apiKey = XAI_API_KEY!;
-      // xAI expects model name without "x-ai/" prefix
-      modelForRequest = chosenModel.replace(/^x-ai\//, "");
-      aiBody.model = modelForRequest;
-    } else {
-      endpoint = "https://ai.gateway.lovable.dev/v1/chat/completions";
-      apiKey = LOVABLE_API_KEY!;
-      aiBody.model = chosenModel;
-      if (chosenModel.startsWith("openai/gpt-5") || chosenModel.includes("gemini-3")) {
+    for (const id of chain) {
+      const p = PROVIDERS[id];
+      const apiKey = Deno.env.get(p.apiKeyEnv);
+      if (!apiKey) {
+        fallbackTrail.push({ provider: id, status: 0, error: `${p.apiKeyEnv} missing` });
+        continue;
+      }
+      const aiBody: Record<string, unknown> = { model: p.modelOnWire, messages, stream: true };
+      if (p.model.startsWith("openai/gpt-5") || p.model.includes("gemini-3")) {
         aiBody.reasoning = { effort: agent.reasoning_effort ?? "medium" };
       }
+      const resp = await fetch(p.endpoint, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(aiBody),
+      });
+      if (resp.ok && resp.body) {
+        chosen = { provider: p, resp };
+        break;
+      }
+      const errText = await resp.text().catch(() => "");
+      fallbackTrail.push({ provider: id, status: resp.status, error: errText.slice(0, 200) });
+      console.warn(`agent-stream provider ${id} failed`, resp.status, errText.slice(0, 200));
     }
 
-    const aiResp = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(aiBody),
-    });
-
-    if (!aiResp.ok || !aiResp.body) {
-      const errText = await aiResp.text();
-      const status = aiResp.status === 429 || aiResp.status === 402 ? aiResp.status : 500;
-      const friendly =
-        aiResp.status === 429
-          ? "Rate limit hit, slow down."
-          : aiResp.status === 402
-            ? "AI credits exhausted — top up in Settings → Workspace → Usage."
-            : aiResp.status === 401
-              ? "Provider rejected the API key."
-              : "AI gateway error";
-      console.error("provider error", aiResp.status, errText.slice(0, 500));
+    if (!chosen) {
+      const summary = fallbackTrail.map((f) => `${f.provider}=${f.status}`).join(",");
+      const friendly = "All AI providers unavailable. Check the brain status badge.";
       if (runId) {
         await userClient
           .from("agent_runs")
-          .update({ status: "error", error: `${friendly}: ${errText.slice(0, 500)}` })
+          .update({ status: "error", error: `${friendly} [${summary}]` })
           .eq("id", runId);
       }
-      return json({ error: friendly }, status);
+      return json({ error: friendly, fallbacks: fallbackTrail }, 503);
+    }
+
+    const { provider, resp } = chosen;
+    if (runId && provider.model !== preferredModel) {
+      // Persist the actual model used so logs are accurate.
+      await userClient.from("agent_runs").update({ model: provider.model }).eq("id", runId);
     }
 
     let fullText = "";
@@ -135,12 +167,22 @@ Deno.serve(async (req) => {
 
     const stream = new ReadableStream({
       async start(controller) {
-        const reader = aiResp.body!.getReader();
+        const reader = resp.body!.getReader();
         let buffer = "";
         try {
+          // Initial meta event — UI knows which brain is actually streaming.
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ meta: { run_id: runId, model: chosenModel, agent: agent.name, provider: isGrok ? "xai" : "lovable" } })}\n\n`,
+              `data: ${JSON.stringify({
+                meta: {
+                  run_id: runId,
+                  model: provider.model,
+                  preferred_model: preferredModel,
+                  agent: agent.name,
+                  provider: provider.id,
+                  fallbacks: fallbackTrail,
+                },
+              })}\n\n`,
             ),
           );
           while (true) {
