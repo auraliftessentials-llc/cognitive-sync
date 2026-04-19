@@ -15,7 +15,13 @@ export type ToolName =
   | "zoho_create_task"
   | "zoho_send_mail"
   | "zoho_list_recent_mail"
-  | "marketing_campaign_brief";
+  | "marketing_campaign_brief"
+  | "web_research"
+  | "cloudflare_list_zones"
+  | "cloudflare_list_dns"
+  | "cloudflare_create_dns"
+  | "cloudflare_purge_cache"
+  | "cloudflare_workers_ai";
 
 async function getValidToken(userId: string) {
   const { data: conn } = await supabaseAdmin
