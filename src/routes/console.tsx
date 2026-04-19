@@ -90,14 +90,14 @@ function ConsoleScreen() {
       if (cmd === "/help") {
         push({ kind: "system", text:
           "Commands:\n" +
-          "  /agent <slug>     switch agent (ceo-grok, atlas, cipher, forge, echo)\n" +
-          "  /brain <model>    switch brain (x-ai/grok-4, openai/gpt-5, google/gemini-2.5-pro …)\n" +
-          "  /zoho deals       show recent CRM deals\n" +
-          "  /zoho leads       show recent CRM leads\n" +
-          "  /zoho contacts    show recent contacts\n" +
-          "  /zoho tasks       show recent tasks\n" +
-          "  /zoho mail        show recent inbox\n" +
-          "  /clear            clear screen\n" +
+          "  /agent <slug>         switch agent (ceo-grok, atlas, cipher, forge, echo)\n" +
+          "  /brain <model>        switch brain (x-ai/grok-4, openai/gpt-5, google/gemini-2.5-pro …)\n" +
+          "  /zoho deals|leads|contacts|tasks|mail   pull live Zoho data\n" +
+          "  /research <query>     live web research via Perplexity (cited)\n" +
+          "  /cloudflare zones     list your Cloudflare zones\n" +
+          "  /cloudflare purge <zone_id>   purge entire CF cache for a zone\n" +
+          "  /cloudflare ai <prompt>       run prompt through Cloudflare Workers AI\n" +
+          "  /clear                clear screen\n" +
           "  Anything else is sent to the active agent.",
         });
         return;
@@ -131,6 +131,25 @@ function ConsoleScreen() {
         const expanded = map[sub];
         if (!expanded) { push({ kind: "error", text: `Unknown /zoho subcommand: ${sub}` }); return; }
         return runAgent(expanded);
+      }
+      if (cmd === "/research") {
+        if (!arg) { push({ kind: "error", text: "Usage: /research <query>" }); return; }
+        return runAgent(`Use web_research to investigate: "${arg}". Return a concise briefing with the top 5 findings, each with a one-line takeaway and the cited source URL. End with 3 strategic moves the operator should consider.`);
+      }
+      if (cmd === "/cloudflare") {
+        const sub = arg.split(" ")[0];
+        const rest = arg.split(" ").slice(1).join(" ");
+        if (sub === "zones") return runAgent("List my Cloudflare zones with their id, name, status and plan as a clean table.");
+        if (sub === "purge") {
+          if (!rest) { push({ kind: "error", text: "Usage: /cloudflare purge <zone_id>" }); return; }
+          return runAgent(`Purge the entire Cloudflare cache for zone_id ${rest} and confirm the result.`);
+        }
+        if (sub === "ai") {
+          if (!rest) { push({ kind: "error", text: "Usage: /cloudflare ai <prompt>" }); return; }
+          return runAgent(`Run this through Cloudflare Workers AI (cloudflare_workers_ai tool) and report the response: ${rest}`);
+        }
+        push({ kind: "error", text: `Unknown /cloudflare subcommand: ${sub} — try zones | purge <zone_id> | ai <prompt>` });
+        return;
       }
       push({ kind: "error", text: `Unknown command: ${cmd} — try /help` });
       return;

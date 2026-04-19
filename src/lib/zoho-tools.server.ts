@@ -15,7 +15,13 @@ export type ToolName =
   | "zoho_create_task"
   | "zoho_send_mail"
   | "zoho_list_recent_mail"
-  | "marketing_campaign_brief";
+  | "marketing_campaign_brief"
+  | "web_research"
+  | "cloudflare_list_zones"
+  | "cloudflare_list_dns"
+  | "cloudflare_create_dns"
+  | "cloudflare_purge_cache"
+  | "cloudflare_workers_ai";
 
 async function getValidToken(userId: string) {
   const { data: conn } = await supabaseAdmin
@@ -94,6 +100,24 @@ async function mailRequest(userId: string, path: string, init?: RequestInit) {
   return r.json();
 }
 
+async function cfFetch(path: string, init?: RequestInit) {
+  const token = process.env.CLOUDFLARE_API_TOKEN;
+  if (!token) throw new Error("CLOUDFLARE_API_TOKEN missing");
+  const r = await fetch(`https://api.cloudflare.com/client/v4${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j?.success === false) {
+    throw new Error(`Cloudflare ${r.status}: ${JSON.stringify(j?.errors ?? j).slice(0, 300)}`);
+  }
+  return j;
+}
+
 export async function executeTool(
   userId: string,
   name: ToolName,
@@ -164,6 +188,79 @@ export async function executeTool(
           ],
         },
       };
+    case "web_research": {
+      const key = process.env.PERPLEXITY_API_KEY;
+      if (!key) throw new Error("PERPLEXITY_API_KEY missing");
+      const recency = ["day", "week", "month", "year"].includes(args.recency) ? args.recency : "week";
+      const r = await fetch("https://api.perplexity.ai/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: args.deep ? "sonar-pro" : "sonar",
+          messages: [
+            { role: "system", content: "Be precise, concise, and cite sources inline. Return facts the operator can act on." },
+            { role: "user", content: String(args.query ?? "") },
+          ],
+          search_recency_filter: recency,
+          temperature: 0.2,
+        }),
+      });
+      if (!r.ok) throw new Error(`Perplexity ${r.status}: ${(await r.text()).slice(0, 300)}`);
+      const j = await r.json();
+      return {
+        answer: j.choices?.[0]?.message?.content ?? "",
+        citations: j.citations ?? [],
+        model: j.model,
+      };
+    }
+    case "cloudflare_list_zones": {
+      const j = await cfFetch(`/zones?per_page=${args.limit ?? 25}`);
+      return { zones: (j.result ?? []).map((z: any) => ({ id: z.id, name: z.name, status: z.status, plan: z.plan?.name })) };
+    }
+    case "cloudflare_list_dns": {
+      if (!args.zone_id) throw new Error("zone_id required");
+      const j = await cfFetch(`/zones/${args.zone_id}/dns_records?per_page=${args.limit ?? 50}`);
+      return { records: (j.result ?? []).map((r: any) => ({ id: r.id, type: r.type, name: r.name, content: r.content, proxied: r.proxied, ttl: r.ttl })) };
+    }
+    case "cloudflare_create_dns": {
+      if (!args.zone_id || !args.type || !args.name || !args.content) throw new Error("zone_id, type, name, content required");
+      const j = await cfFetch(`/zones/${args.zone_id}/dns_records`, {
+        method: "POST",
+        body: JSON.stringify({
+          type: args.type, name: args.name, content: args.content,
+          ttl: args.ttl ?? 1, proxied: args.proxied ?? true,
+        }),
+      });
+      return j.result;
+    }
+    case "cloudflare_purge_cache": {
+      if (!args.zone_id) throw new Error("zone_id required");
+      const body = args.urls?.length ? { files: args.urls } : { purge_everything: true };
+      const j = await cfFetch(`/zones/${args.zone_id}/purge_cache`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      return j.result;
+    }
+    case "cloudflare_workers_ai": {
+      const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+      const token = process.env.CLOUDFLARE_API_TOKEN;
+      if (!accountId || !token) throw new Error("CLOUDFLARE_ACCOUNT_ID + CLOUDFLARE_API_TOKEN required");
+      const model = args.model ?? "@cf/meta/llama-3.1-8b-instruct";
+      const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: args.system ?? "You are a precise assistant." },
+            { role: "user", content: String(args.prompt ?? "") },
+          ],
+        }),
+      });
+      if (!r.ok) throw new Error(`Cloudflare AI ${r.status}: ${(await r.text()).slice(0, 300)}`);
+      const j = await r.json();
+      return { model, response: j.result?.response ?? j };
+    }
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -181,4 +278,10 @@ export const TOOL_SCHEMAS = [
   { type: "function", function: { name: "zoho_send_mail",    description: "Send a Zoho Mail message from the user's primary account.", parameters: { type: "object", properties: { to: { type: "string" }, subject: { type: "string" }, body: { type: "string" } }, required: ["to","subject","body"] } } },
   { type: "function", function: { name: "zoho_list_recent_mail", description: "List recent Zoho Mail messages.", parameters: { type: "object", properties: { limit: { type: "number" } } } } },
   { type: "function", function: { name: "marketing_campaign_brief", description: "Return a structured campaign brief scaffold to expand.", parameters: { type: "object", properties: { product: { type: "string" }, audience: { type: "string" }, goal: { type: "string" } }, required: ["product","audience","goal"] } } },
+  { type: "function", function: { name: "web_research", description: "Live web research via Perplexity. Returns a grounded answer + citation URLs. Use for competitor intel, market data, news, or any fact you need to verify in real time.", parameters: { type: "object", properties: { query: { type: "string" }, recency: { type: "string", enum: ["day","week","month","year"] }, deep: { type: "boolean", description: "Use sonar-pro for multi-step reasoning" } }, required: ["query"] } } },
+  { type: "function", function: { name: "cloudflare_list_zones", description: "List Cloudflare zones (domains) on this account.", parameters: { type: "object", properties: { limit: { type: "number" } } } } },
+  { type: "function", function: { name: "cloudflare_list_dns", description: "List DNS records for a Cloudflare zone.", parameters: { type: "object", properties: { zone_id: { type: "string" }, limit: { type: "number" } }, required: ["zone_id"] } } },
+  { type: "function", function: { name: "cloudflare_create_dns", description: "Create a DNS record on a Cloudflare zone.", parameters: { type: "object", properties: { zone_id: { type: "string" }, type: { type: "string" }, name: { type: "string" }, content: { type: "string" }, proxied: { type: "boolean" }, ttl: { type: "number" } }, required: ["zone_id","type","name","content"] } } },
+  { type: "function", function: { name: "cloudflare_purge_cache", description: "Purge Cloudflare cache for a zone (all or specific URLs).", parameters: { type: "object", properties: { zone_id: { type: "string" }, urls: { type: "array", items: { type: "string" } } }, required: ["zone_id"] } } },
+  { type: "function", function: { name: "cloudflare_workers_ai", description: "Run a prompt through a Cloudflare Workers AI model (default Llama 3.1 8B).", parameters: { type: "object", properties: { prompt: { type: "string" }, system: { type: "string" }, model: { type: "string" } }, required: ["prompt"] } } },
 ] as const;
