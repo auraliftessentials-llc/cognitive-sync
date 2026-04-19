@@ -1,0 +1,263 @@
+import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+
+async function assertSuperAdmin(supabase: any, userId: string) {
+  const { data, error } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  if (error) throw new Error(error.message);
+  const roles = (data ?? []).map((r: any) => r.role);
+  if (!roles.includes("super_admin")) {
+    throw new Error("Forbidden: super_admin role required");
+  }
+}
+
+// Get all users + roles + project counts + system stats
+export const getAdminOverview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context as any;
+    await assertSuperAdmin(supabase, userId);
+
+    // List all auth users via admin client
+    const { data: usersList, error: usersErr } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    });
+    if (usersErr) throw new Error(usersErr.message);
+
+    const users = usersList?.users ?? [];
+
+    // Roles, projects, profiles, suggestions, conversations (admin bypass for global view)
+    const [rolesRes, projectsRes, profilesRes, suggestionsRes, convRes, msgRes] = await Promise.all([
+      supabaseAdmin.from("user_roles").select("user_id, role"),
+      supabaseAdmin.from("projects").select("id, user_id, status, priority, last_worked_on, updated_at, name"),
+      supabaseAdmin.from("profiles").select("user_id, display_name, avatar_url, skills, focus_areas"),
+      supabaseAdmin.from("suggestions").select("id, user_id, dismissed, created_at"),
+      supabaseAdmin.from("conversations").select("id, user_id, updated_at"),
+      supabaseAdmin.from("messages").select("id, user_id, created_at"),
+    ]);
+
+    const rolesByUser = new Map<string, string[]>();
+    (rolesRes.data ?? []).forEach((r: any) => {
+      const arr = rolesByUser.get(r.user_id) ?? [];
+      arr.push(r.role);
+      rolesByUser.set(r.user_id, arr);
+    });
+
+    const projectsByUser = new Map<string, any[]>();
+    (projectsRes.data ?? []).forEach((p: any) => {
+      const arr = projectsByUser.get(p.user_id) ?? [];
+      arr.push(p);
+      projectsByUser.set(p.user_id, arr);
+    });
+
+    const profileByUser = new Map<string, any>();
+    (profilesRes.data ?? []).forEach((p: any) => profileByUser.set(p.user_id, p));
+
+    const suggCountByUser = new Map<string, number>();
+    (suggestionsRes.data ?? []).forEach((s: any) => {
+      suggCountByUser.set(s.user_id, (suggCountByUser.get(s.user_id) ?? 0) + 1);
+    });
+
+    const msgCountByUser = new Map<string, number>();
+    (msgRes.data ?? []).forEach((m: any) => {
+      msgCountByUser.set(m.user_id, (msgCountByUser.get(m.user_id) ?? 0) + 1);
+    });
+
+    const enriched = users.map((u: any) => {
+      const projects = projectsByUser.get(u.id) ?? [];
+      const profile = profileByUser.get(u.id);
+      return {
+        id: u.id,
+        email: u.email ?? "(no email)",
+        created_at: u.created_at,
+        last_sign_in_at: u.last_sign_in_at,
+        confirmed: !!u.email_confirmed_at || !!u.confirmed_at,
+        roles: rolesByUser.get(u.id) ?? [],
+        display_name: profile?.display_name ?? null,
+        avatar_url: profile?.avatar_url ?? null,
+        project_count: projects.length,
+        active_projects: projects.filter((p: any) => p.status === "active").length,
+        last_activity:
+          projects
+            .map((p: any) => p.last_worked_on || p.updated_at)
+            .filter(Boolean)
+            .sort()
+            .reverse()[0] ?? null,
+        suggestion_count: suggCountByUser.get(u.id) ?? 0,
+        message_count: msgCountByUser.get(u.id) ?? 0,
+      };
+    });
+
+    // System-wide stats
+    const allProjects = projectsRes.data ?? [];
+    const stats = {
+      total_users: users.length,
+      total_super_admins: enriched.filter((u) => u.roles.includes("super_admin")).length,
+      total_admins: enriched.filter((u) => u.roles.includes("admin")).length,
+      active_last_7d: users.filter(
+        (u: any) =>
+          u.last_sign_in_at &&
+          Date.now() - new Date(u.last_sign_in_at).getTime() < 7 * 24 * 60 * 60 * 1000,
+      ).length,
+      total_projects: allProjects.length,
+      total_active_projects: allProjects.filter((p: any) => p.status === "active").length,
+      total_conversations: (convRes.data ?? []).length,
+      total_messages: (msgRes.data ?? []).length,
+      total_suggestions: (suggestionsRes.data ?? []).length,
+    };
+
+    // Top projects by recency (global)
+    const recentProjects = [...allProjects]
+      .sort((a: any, b: any) => {
+        const aT = new Date(a.last_worked_on || a.updated_at).getTime();
+        const bT = new Date(b.last_worked_on || b.updated_at).getTime();
+        return bT - aT;
+      })
+      .slice(0, 8);
+
+    return { users: enriched, stats, recentProjects };
+  });
+
+// Grant or revoke a role
+export const setUserRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (d: { targetUserId: string; role: "admin" | "super_admin" | "user"; action: "grant" | "revoke" }) => d,
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    await assertSuperAdmin(supabase, userId);
+
+    if (data.action === "revoke") {
+      // Prevent revoking your own super_admin if you're the last one
+      if (data.role === "super_admin" && data.targetUserId === userId) {
+        const { data: supers } = await supabaseAdmin
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "super_admin");
+        if ((supers ?? []).length <= 1) {
+          throw new Error("Cannot revoke the last super_admin (yourself).");
+        }
+      }
+      const { error } = await supabaseAdmin
+        .from("user_roles")
+        .delete()
+        .eq("user_id", data.targetUserId)
+        .eq("role", data.role);
+      if (error) throw new Error(error.message);
+      return { ok: true, action: "revoked" };
+    }
+
+    // grant
+    const { error } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: data.targetUserId, role: data.role });
+    if (error && !error.message.includes("duplicate")) throw new Error(error.message);
+    return { ok: true, action: "granted" };
+  });
+
+// Delete a user entirely
+export const deleteUserAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { targetUserId: string }) => d)
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    await assertSuperAdmin(supabase, userId);
+    if (data.targetUserId === userId) throw new Error("Cannot delete your own account.");
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.targetUserId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// AI-powered Fleet Insights — analyzes the entire system
+export const generateFleetInsights = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context as any;
+    await assertSuperAdmin(supabase, userId);
+
+    const key = process.env.LOVABLE_API_KEY;
+    if (!key) throw new Error("LOVABLE_API_KEY is not configured");
+
+    const [usersRes, projectsRes, suggRes] = await Promise.all([
+      supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+      supabaseAdmin.from("projects").select("name, status, priority, tech_stack, tags, last_worked_on"),
+      supabaseAdmin.from("suggestions").select("title, kind, dismissed"),
+    ]);
+
+    const users = usersRes.data?.users ?? [];
+    const projects = projectsRes.data ?? [];
+    const sugg = suggRes.data ?? [];
+
+    const techCount: Record<string, number> = {};
+    projects.forEach((p: any) =>
+      (p.tech_stack ?? []).forEach((t: string) => (techCount[t] = (techCount[t] ?? 0) + 1)),
+    );
+    const topTech = Object.entries(techCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([k, v]) => `${k}(${v})`)
+      .join(", ");
+
+    const statusCount: Record<string, number> = {};
+    projects.forEach((p: any) => (statusCount[p.status] = (statusCount[p.status] ?? 0) + 1));
+
+    const ctx = `FLEET SNAPSHOT
+Users: ${users.length}
+Projects: ${projects.length} — by status: ${JSON.stringify(statusCount)}
+Top tech: ${topTech || "—"}
+Suggestions generated: ${sugg.length} (dismissed: ${sugg.filter((s: any) => s.dismissed).length})
+
+Sample projects (top 15 by recency):
+${[...projects]
+  .sort((a: any, b: any) => new Date(b.last_worked_on || 0).getTime() - new Date(a.last_worked_on || 0).getTime())
+  .slice(0, 15)
+  .map((p: any, i: number) => `${i + 1}. [${p.status}|P${p.priority}] ${p.name} — ${(p.tech_stack ?? []).join("/")}`)
+  .join("\n")}`;
+
+    const res = await fetch(GATEWAY, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are the Fleet Strategist for a multi-tenant project intelligence platform. Output sharp, executive-grade insights. No fluff. No 'as an AI'. Use markdown with short sections.",
+          },
+          {
+            role: "user",
+            content: `${ctx}
+
+Produce a "Fleet Intelligence Briefing" with these sections:
+### Health
+2-3 bullets on overall fleet state.
+### Concentration Risks
+What tech/themes dominate? Where's the user over-extended?
+### Hidden Opportunities
+Cross-project leverage points or merges worth doing.
+### Top 3 Moves
+Numbered, imperative, specific (reference real project names).
+
+Be terse. Maximum 250 words total.`,
+          },
+        ],
+      }),
+    });
+
+    if (!res.ok) {
+      const t = await res.text();
+      if (res.status === 429) throw new Error("Rate limit hit. Retry shortly.");
+      if (res.status === 402) throw new Error("AI credits exhausted.");
+      throw new Error(`AI gateway ${res.status}: ${t}`);
+    }
+    const json = await res.json();
+    return { briefing: json.choices?.[0]?.message?.content ?? "" };
+  });
