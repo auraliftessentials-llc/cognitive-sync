@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { Merkabah } from "@/components/Merkabah";
 import { supabase } from "@/integrations/supabase/client";
 import { consoleRun } from "@/lib/console.functions";
+import { refreshBrainHealth } from "@/lib/health.functions";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -97,9 +98,31 @@ function ConsoleScreen() {
           "  /cloudflare zones     list your Cloudflare zones\n" +
           "  /cloudflare purge <zone_id>   purge entire CF cache for a zone\n" +
           "  /cloudflare ai <prompt>       run prompt through Cloudflare Workers AI\n" +
+          "  /brains               live health check of every AI provider + Perplexity + Cloudflare\n" +
           "  /clear                clear screen\n" +
           "  Anything else is sent to the active agent.",
         });
+        return;
+      }
+      if (cmd === "/brains") {
+        push({ kind: "system", text: "Pinging every brain + auxiliary service…" });
+        try {
+          const snap = await refreshBrainHealth();
+          const fmt = (s: string) =>
+            s === "ok" ? "✓ OK" : s === "degraded" ? "△ DEGRADED" : s === "down" ? "✗ DOWN" : "○ UNCONFIGURED";
+          const rows: string[] = [];
+          rows.push("BRAINS");
+          for (const p of snap.providers) {
+            rows.push(`  ${fmt(p.status).padEnd(16)} ${p.label.padEnd(28)} ${p.http ?? ""} ${p.latency_ms ? p.latency_ms + "ms" : ""}${p.message ? "  — " + p.message.slice(0, 100) : ""}`);
+          }
+          rows.push("AUXILIARY");
+          for (const a of snap.auxiliary) {
+            rows.push(`  ${fmt(a.status).padEnd(16)} ${a.label.padEnd(28)} ${a.http ?? ""} ${a.latency_ms ? a.latency_ms + "ms" : ""}${a.message ? "  — " + a.message.slice(0, 100) : ""}`);
+          }
+          push({ kind: "system", text: rows.join("\n") });
+        } catch (e: any) {
+          push({ kind: "error", text: e?.message ?? "Health check failed" });
+        }
         return;
       }
       if (cmd === "/clear") { setLines([{ kind: "system", text: "Console cleared." }]); setHistory([]); return; }
@@ -184,6 +207,12 @@ function ConsoleScreen() {
           preview: tc.ok
             ? JSON.stringify(tc.result).slice(0, 160) + "…"
             : tc.error ?? "tool error",
+        });
+      }
+      if (res.fallbacks?.length) {
+        push({
+          kind: "system",
+          text: `↻ Brain fallback: ${res.fallbacks.map((f) => `${f.provider}=${f.status}`).join(" → ")} → ${res.provider}`,
         });
       }
       push({
