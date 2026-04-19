@@ -290,15 +290,22 @@ function LineRow({ line }: { line: Line }) {
   if (line.kind === "error") {
     return <div className="text-destructive mb-1">! {line.text}</div>;
   }
-  // agent
+  if (line.kind === "agent") {
+    return (
+      <div className="mb-3 animate-fade-in-up">
+        <div className="text-[10px] uppercase tracking-[0.3em] text-brand-cyan mb-1">
+          {line.emoji} {line.agent} · {line.model}
+        </div>
+        <div className="prose prose-invert max-w-none fluid-body">
+          <ReactMarkdown>{line.text}</ReactMarkdown>
+        </div>
+      </div>
+    );
+  }
+  // prompt
   return (
-    <div className="mb-3 animate-fade-in-up">
-      <div className="text-[10px] uppercase tracking-[0.3em] text-brand-cyan mb-1">
-        {line.emoji} {line.agent} · {line.model}
-      </div>
-      <div className="prose prose-invert max-w-none fluid-body">
-        <ReactMarkdown>{line.text}</ReactMarkdown>
-      </div>
+    <div className="mb-1 text-brand-cyan/60 text-[11px]">
+      → {line.agent}: {line.text}
     </div>
   );
 }
