@@ -70,7 +70,7 @@ function AgentsPage() {
 
 function AgentsInner() {
   const { user } = useAuth();
-  const { current: workspace } = useWorkspace();
+  const { active: workspace } = useWorkspace();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [model, setModel] = useState<string>("");
