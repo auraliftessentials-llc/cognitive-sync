@@ -20,6 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Brain, Loader2, Send, Sparkles, Zap, History } from "lucide-react";
+import { Merkabah } from "@/components/Merkabah";
 import ReactMarkdown from "react-markdown";
 
 export const Route = createFileRoute("/agents")({
