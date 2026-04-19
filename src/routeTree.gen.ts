@@ -18,6 +18,7 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as ApiZohoCallbackRouteImport } from './routes/api/zoho.callback'
 
 const SuggestionsRoute = SuggestionsRouteImport.update({
@@ -65,6 +66,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiZohoCallbackRoute = ApiZohoCallbackRouteImport.update({
   id: '/api/zoho/callback',
   path: '/api/zoho/callback',
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/suggestions': typeof SuggestionsRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
 }
 export interface FileRoutesByTo {
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/suggestions': typeof SuggestionsRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
 }
 export interface FileRoutesById {
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/suggestions': typeof SuggestionsRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
 }
 export interface FileRouteTypes {
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/suggestions'
+    | '/invite/$token'
     | '/api/zoho/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/suggestions'
+    | '/invite/$token'
     | '/api/zoho/callback'
   id:
     | '__root__'
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/suggestions'
+    | '/invite/$token'
     | '/api/zoho/callback'
   fileRoutesById: FileRoutesById
 }
@@ -157,6 +169,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRoute
   SuggestionsRoute: typeof SuggestionsRoute
+  InviteTokenRoute: typeof InviteTokenRoute
   ApiZohoCallbackRoute: typeof ApiZohoCallbackRoute
 }
 
@@ -225,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/zoho/callback': {
       id: '/api/zoho/callback'
       path: '/api/zoho/callback'
@@ -245,8 +265,18 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRoute,
   SuggestionsRoute: SuggestionsRoute,
+  InviteTokenRoute: InviteTokenRoute,
   ApiZohoCallbackRoute: ApiZohoCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
