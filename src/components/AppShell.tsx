@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Brain, FolderGit2, MessageSquare, Sparkles, User, LogOut, Github } from "lucide-react";
+import { Brain, FolderGit2, MessageSquare, Sparkles, User, LogOut, Github, Crown } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import type { ReactNode } from "react";
@@ -50,6 +50,19 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+          {isSuperAdmin && (
+            <Link
+              to="/admin"
+              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-all mt-2 border ${
+                loc.pathname.startsWith("/admin")
+                  ? "bg-primary/15 text-primary border-primary/40 glow-text"
+                  : "border-primary/20 text-primary/80 hover:bg-primary/10 hover:text-primary"
+              }`}
+            >
+              <Crown className="h-4 w-4" />
+              Command
+            </Link>
+          )}
         </nav>
 
         <div className="border-t border-border pt-3 mt-3">
