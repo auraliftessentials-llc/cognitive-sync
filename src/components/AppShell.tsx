@@ -1,9 +1,10 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Brain, FolderGit2, MessageSquare, Sparkles, User, LogOut, Github, Crown, Building2, ChevronDown, Bot } from "lucide-react";
+import { Brain, FolderGit2, MessageSquare, Sparkles, User, LogOut, Github, Crown, Building2, ChevronDown, Bot, Terminal } from "lucide-react";
 import { Merkabah } from "@/components/Merkabah";
 import { useAuth } from "@/lib/auth-context";
 import { useWorkspace } from "@/lib/workspace-context";
 import { Button } from "@/components/ui/button";
+import { CommandPalette } from "@/components/CommandPalette";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,10 +17,11 @@ import type { ReactNode } from "react";
 
 const navItems = [
   { to: "/dashboard", label: "Pulse", icon: Brain },
+  { to: "/console", label: "Console", icon: Terminal },
+  { to: "/agents", label: "Agents", icon: Bot },
   { to: "/projects", label: "Library", icon: FolderGit2 },
   { to: "/suggestions", label: "Moves", icon: Sparkles },
   { to: "/chat", label: "Brain", icon: MessageSquare },
-  { to: "/agents", label: "Agents", icon: Bot },
   { to: "/github", label: "GitHub", icon: Github },
   { to: "/profile", label: "Profile", icon: User },
 ] as const;
@@ -31,17 +33,28 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex">
+      <CommandPalette />
       <aside className="w-60 border-r border-border bg-card/40 backdrop-blur-sm flex flex-col p-4 sticky top-0 h-screen">
-        <Link to="/dashboard" className="flex items-center gap-2 px-2 py-3 mb-4">
+        <Link to="/dashboard" className="flex items-center gap-3 px-1 py-3 mb-4 group">
           <div className="relative">
-            <Brain className="h-7 w-7 text-primary" />
-            <div className="absolute -top-1 -right-1 pulse-dot" />
+            <Merkabah size={34} />
           </div>
-          <div>
-            <div className="font-display text-sm tracking-wider">NEURAL.OPS</div>
-            <div className="text-[10px] text-muted-foreground">command center</div>
+          <div className="min-w-0">
+            <div className="font-display text-sm tracking-[0.2em] merkabah-text font-semibold">MERKABAH</div>
+            <div className="text-[9px] text-muted-foreground tracking-[0.3em] uppercase">operator OS</div>
           </div>
         </Link>
+
+        <button
+          onClick={() => {
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
+          }}
+          className="mb-4 w-full flex items-center justify-between gap-2 rounded-md border border-border/60 bg-muted/20 px-2.5 py-2 hover:border-brand-blue/40 hover:bg-brand-blue/5 transition group"
+          aria-label="Open command palette"
+        >
+          <span className="text-[10px] tracking-[0.25em] uppercase text-muted-foreground group-hover:text-brand-blue">Command</span>
+          <kbd className="text-[10px] text-muted-foreground border rounded px-1">⌘K</kbd>
+        </button>
 
         <WorkspaceSwitcher />
 
