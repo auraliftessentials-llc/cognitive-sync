@@ -230,6 +230,36 @@ export type Database = {
           },
         ]
       }
+      brain_health: {
+        Row: {
+          checked_at: string
+          http: number | null
+          id: string
+          latency_ms: number | null
+          message: string | null
+          provider: string
+          status: string
+        }
+        Insert: {
+          checked_at?: string
+          http?: number | null
+          id?: string
+          latency_ms?: number | null
+          message?: string | null
+          provider: string
+          status: string
+        }
+        Update: {
+          checked_at?: string
+          http?: number | null
+          id?: string
+          latency_ms?: number | null
+          message?: string | null
+          provider?: string
+          status?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
