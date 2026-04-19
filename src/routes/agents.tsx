@@ -56,6 +56,9 @@ const MODEL_LABELS: Record<string, string> = {
   "openai/gpt-5": "GPT-5 · top-tier",
   "openai/gpt-5-mini": "GPT-5 mini · cost/perf",
   "openai/gpt-5-nano": "GPT-5 nano · ultra fast",
+  "x-ai/grok-4": "Grok 4 · founder mode",
+  "x-ai/grok-3": "Grok 3 · sharp reasoning",
+  "x-ai/grok-3-mini": "Grok 3 mini · fast & witty",
 };
 
 function AgentsPage() {
