@@ -188,6 +188,47 @@ function Projects() {
           ))}
         </div>
       )}
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Edit project</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Field label="Name" v={editForm.name} onChange={(v) => setEditForm({ ...editForm, name: v })} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Status</Label>
+                <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">active</SelectItem>
+                    <SelectItem value="paused">paused</SelectItem>
+                    <SelectItem value="shipped">shipped</SelectItem>
+                    <SelectItem value="archived">archived</SelectItem>
+                    <SelectItem value="idea">idea</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Priority</Label>
+                <Select value={String(editForm.priority)} onValueChange={(v) => setEditForm({ ...editForm, priority: Number(v) })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5].map((n) => <SelectItem key={n} value={String(n)}>P{n}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <Textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={4} />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setEditing(null)}>Cancel</Button>
+              <Button onClick={saveEdit} className="flex-1 bg-primary text-primary-foreground">Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
