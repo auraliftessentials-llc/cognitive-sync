@@ -77,6 +77,53 @@ export type Database = {
           },
         ]
       }
+      agent_tool_calls: {
+        Row: {
+          arguments: Json
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          id: string
+          result: Json | null
+          run_id: string | null
+          status: string
+          tool_name: string
+          user_id: string
+        }
+        Insert: {
+          arguments?: Json
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          result?: Json | null
+          run_id?: string | null
+          status?: string
+          tool_name: string
+          user_id: string
+        }
+        Update: {
+          arguments?: Json
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          result?: Json | null
+          run_id?: string | null
+          status?: string
+          tool_name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_tool_calls_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agents: {
         Row: {
           available_models: string[]

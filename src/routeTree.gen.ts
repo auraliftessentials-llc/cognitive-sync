@@ -14,6 +14,7 @@ import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as GithubRouteImport } from './routes/github'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as ConsoleRouteImport } from './routes/console'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AgentsRouteImport } from './routes/agents'
@@ -45,6 +46,11 @@ const GithubRoute = GithubRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConsoleRoute = ConsoleRouteImport.update({
+  id: '/console',
+  path: '/console',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChatRoute = ChatRouteImport.update({
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/agents': typeof AgentsRoute
   '/auth': typeof AuthRoute
   '/chat': typeof ChatRoute
+  '/console': typeof ConsoleRoute
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
   '/profile': typeof ProfileRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/agents': typeof AgentsRoute
   '/auth': typeof AuthRoute
   '/chat': typeof ChatRoute
+  '/console': typeof ConsoleRoute
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
   '/profile': typeof ProfileRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/agents': typeof AgentsRoute
   '/auth': typeof AuthRoute
   '/chat': typeof ChatRoute
+  '/console': typeof ConsoleRoute
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
   '/profile': typeof ProfileRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/agents'
     | '/auth'
     | '/chat'
+    | '/console'
     | '/dashboard'
     | '/github'
     | '/profile'
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/agents'
     | '/auth'
     | '/chat'
+    | '/console'
     | '/dashboard'
     | '/github'
     | '/profile'
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/agents'
     | '/auth'
     | '/chat'
+    | '/console'
     | '/dashboard'
     | '/github'
     | '/profile'
@@ -177,6 +189,7 @@ export interface RootRouteChildren {
   AgentsRoute: typeof AgentsRoute
   AuthRoute: typeof AuthRoute
   ChatRoute: typeof ChatRoute
+  ConsoleRoute: typeof ConsoleRoute
   DashboardRoute: typeof DashboardRoute
   GithubRoute: typeof GithubRoute
   ProfileRoute: typeof ProfileRoute
@@ -221,6 +234,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/console': {
+      id: '/console'
+      path: '/console'
+      fullPath: '/console'
+      preLoaderRoute: typeof ConsoleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chat': {
@@ -281,6 +301,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgentsRoute: AgentsRoute,
   AuthRoute: AuthRoute,
   ChatRoute: ChatRoute,
+  ConsoleRoute: ConsoleRoute,
   DashboardRoute: DashboardRoute,
   GithubRoute: GithubRoute,
   ProfileRoute: ProfileRoute,

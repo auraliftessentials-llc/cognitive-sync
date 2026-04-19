@@ -29,11 +29,11 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Neural Ops — Your project command center" },
+      { title: "MERKABAH OS — The Operator's Command Layer" },
       {
         name: "description",
         content:
-          "A self-syncing cognitive layer for your entire project library. AI agents that know what you're working on and what to do next.",
+          "MERKABAH OS — sacred-geometry command center for founders. Brain-switching executive agents, live Zoho CRM intelligence, and a marketing-genius CEO Grok at your shoulder.",
       },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
