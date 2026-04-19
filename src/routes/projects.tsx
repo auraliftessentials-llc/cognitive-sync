@@ -168,6 +168,7 @@ function Projects() {
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button size="icon" variant="ghost" onClick={() => summarize(p.id)}><Sparkles className="h-3 w-3" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => openEdit(p)}><Pencil className="h-3 w-3" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => remove(p.id)}><Trash2 className="h-3 w-3" /></Button>
                 </div>
               </div>
