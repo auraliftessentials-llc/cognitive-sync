@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, ExternalLink, Github as GH, Sparkles } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Trash2, ExternalLink, Github as GH, Sparkles, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { summarizeProject } from "@/lib/ai.functions";
 
@@ -36,6 +37,8 @@ function Projects() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
   const [filter, setFilter] = useState("");
+  const [editing, setEditing] = useState<P | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", status: "active", priority: 3, notes: "" });
 
   const load = async () => {
     if (!user) return;
@@ -68,6 +71,26 @@ function Projects() {
     if (!confirm("Delete this project?")) return;
     const { error } = await supabase.from("projects").delete().eq("id", id);
     if (error) return toast.error(error.message);
+    load();
+  };
+
+  const openEdit = (p: P) => {
+    setEditing(p);
+    setEditForm({ name: p.name, status: p.status, priority: p.priority, notes: p.notes ?? "" });
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    if (!editForm.name.trim()) return toast.error("Name required");
+    const { error } = await supabase.from("projects").update({
+      name: editForm.name.trim(),
+      status: editForm.status,
+      priority: Number(editForm.priority) || 3,
+      notes: editForm.notes.trim() || null,
+    }).eq("id", editing.id);
+    if (error) return toast.error(error.message);
+    toast.success("Updated");
+    setEditing(null);
     load();
   };
 
@@ -145,6 +168,7 @@ function Projects() {
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button size="icon" variant="ghost" onClick={() => summarize(p.id)}><Sparkles className="h-3 w-3" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => openEdit(p)}><Pencil className="h-3 w-3" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => remove(p.id)}><Trash2 className="h-3 w-3" /></Button>
                 </div>
               </div>
@@ -164,6 +188,47 @@ function Projects() {
           ))}
         </div>
       )}
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Edit project</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Field label="Name" v={editForm.name} onChange={(v) => setEditForm({ ...editForm, name: v })} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Status</Label>
+                <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">active</SelectItem>
+                    <SelectItem value="paused">paused</SelectItem>
+                    <SelectItem value="shipped">shipped</SelectItem>
+                    <SelectItem value="archived">archived</SelectItem>
+                    <SelectItem value="idea">idea</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Priority</Label>
+                <Select value={String(editForm.priority)} onValueChange={(v) => setEditForm({ ...editForm, priority: Number(v) })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5].map((n) => <SelectItem key={n} value={String(n)}>P{n}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <Textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={4} />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setEditing(null)}>Cancel</Button>
+              <Button onClick={saveEdit} className="flex-1 bg-primary text-primary-foreground">Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
