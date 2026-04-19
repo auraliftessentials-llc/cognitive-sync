@@ -74,6 +74,26 @@ function Projects() {
     load();
   };
 
+  const openEdit = (p: P) => {
+    setEditing(p);
+    setEditForm({ name: p.name, status: p.status, priority: p.priority, notes: p.notes ?? "" });
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    if (!editForm.name.trim()) return toast.error("Name required");
+    const { error } = await supabase.from("projects").update({
+      name: editForm.name.trim(),
+      status: editForm.status,
+      priority: Number(editForm.priority) || 3,
+      notes: editForm.notes.trim() || null,
+    }).eq("id", editing.id);
+    if (error) return toast.error(error.message);
+    toast.success("Updated");
+    setEditing(null);
+    load();
+  };
+
   const summarize = async (id: string) => {
     toast.loading("Summarizing…", { id });
     try {
