@@ -36,7 +36,12 @@ function Page() {
         return;
       }
       const r = await syncGithubRepos({ data: { token: override } });
-      toast.success(`Synced: ${r.added} added, ${r.updated} updated (${r.total} total)`);
+      const orgSummary = r.orgs?.length
+        ? ` · orgs: ${r.orgs.join(", ")}`
+        : " · no orgs found";
+      toast.success(
+        `Synced: ${r.added} added, ${r.updated} updated (${r.total} total)${orgSummary}`,
+      );
       setToken("");
     } catch (e: any) {
       toast.error(e?.message ?? "Sync failed");
