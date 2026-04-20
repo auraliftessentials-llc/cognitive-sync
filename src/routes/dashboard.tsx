@@ -6,8 +6,10 @@ import { MerkabahHero } from "@/components/MerkabahHero";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
-import { Brain, FolderGit2, Sparkles, Activity, ArrowRight, Crown, Terminal } from "lucide-react";
+import { Brain, FolderGit2, Sparkles, Activity, ArrowRight, Crown, Terminal, Mail, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { generateSuggestions } from "@/lib/ai.functions";
+import { getResendStatus, sendResendTest, type ResendStatus } from "@/lib/resend.functions";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard")({
