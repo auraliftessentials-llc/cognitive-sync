@@ -162,7 +162,7 @@ function Page() {
         )}
 
         <div className="flex flex-wrap gap-2">
-          <Button onClick={sync} disabled={busy} className="bg-primary text-primary-foreground hover:opacity-90 flex-1 min-w-[160px]">
+          <Button onClick={() => sync()} disabled={busy} className="bg-primary text-primary-foreground hover:opacity-90 flex-1 min-w-[160px]">
             {busy ? "Syncing…" : "Sync repositories"}
           </Button>
           {stored && (
