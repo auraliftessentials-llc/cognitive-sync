@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Github, Shield } from "lucide-react";
-import { syncGithubRepos } from "@/lib/github.functions";
+import { Github, Shield, CheckCircle2, KeyRound } from "lucide-react";
+import { syncGithubRepos, getGithubTokenStatus } from "@/lib/github.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/github")({
@@ -18,12 +18,24 @@ export const Route = createFileRoute("/github")({
 function Page() {
   const [token, setToken] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showOverride, setShowOverride] = useState(false);
+  const [stored, setStored] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    getGithubTokenStatus()
+      .then((r) => setStored(r.configured))
+      .catch(() => setStored(false));
+  }, []);
 
   const sync = async () => {
-    if (!token.trim()) return toast.error("Paste a GitHub token");
     setBusy(true);
     try {
-      const r = await syncGithubRepos({ data: { token: token.trim() } });
+      const override = showOverride ? token.trim() : undefined;
+      if (showOverride && !override) {
+        toast.error("Paste a token or disable override");
+        return;
+      }
+      const r = await syncGithubRepos({ data: { token: override } });
       toast.success(`Synced: ${r.added} added, ${r.updated} updated (${r.total} total)`);
       setToken("");
     } catch (e: any) {
@@ -44,22 +56,37 @@ function Page() {
         and last-pushed timestamp. Re-running keeps things in sync (existing repos are updated, not duplicated).
       </p>
 
-      <div className="glow-border rounded-lg p-6 mb-6">
-        <div className="flex items-start gap-3 mb-4">
-          <Shield className="h-5 w-5 text-pulse flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-muted-foreground">
-            <strong className="text-foreground">Honest note:</strong> your token is sent to the server only for this one sync
-            request and is <strong>not stored</strong>. Run sync again whenever you want fresh data. For best results, create
-            a fine-grained token with <em>Contents: read</em> and <em>Metadata: read</em> scope at{" "}
-            <a href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noreferrer" className="text-primary hover:underline">
-              github.com/settings/tokens
-            </a>.
+      <div className="glow-border rounded-lg p-6 mb-6 space-y-4">
+        {stored === null ? (
+          <div className="text-sm text-muted-foreground">Checking stored token…</div>
+        ) : stored ? (
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <div className="text-foreground font-medium">Stored GITHUB_TOKEN active</div>
+              <div className="text-muted-foreground">
+                Sync uses your backend-stored token automatically. No paste needed.
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex items-start gap-3">
+            <Shield className="h-5 w-5 text-pulse flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-muted-foreground">
+              No backend GITHUB_TOKEN found. Paste a personal token below, or add one to backend secrets to skip this
+              step. Create a fine-grained token with <em>Contents: read</em> and <em>Metadata: read</em> at{" "}
+              <a href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                github.com/settings/tokens
+              </a>.
+            </div>
+          </div>
+        )}
 
-        <div className="space-y-3">
+        {(stored === false || showOverride) && (
           <div>
-            <Label htmlFor="tok">GitHub Personal Access Token</Label>
+            <Label htmlFor="tok">
+              {stored ? "Override token (optional)" : "GitHub Personal Access Token"}
+            </Label>
             <Input
               id="tok"
               type="password"
@@ -69,14 +96,28 @@ function Page() {
               autoComplete="off"
             />
           </div>
-          <Button onClick={sync} disabled={busy} className="w-full bg-primary text-primary-foreground hover:opacity-90">
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={sync} disabled={busy} className="bg-primary text-primary-foreground hover:opacity-90 flex-1 min-w-[160px]">
             {busy ? "Syncing…" : "Sync repositories"}
           </Button>
+          {stored && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowOverride((v) => !v)}
+              className="gap-2"
+            >
+              <KeyRound className="h-4 w-4" />
+              {showOverride ? "Use stored token" : "Override token"}
+            </Button>
+          )}
         </div>
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Heads up: this only fetches repos visible to the token. Private orgs may need additional scope.
+        Heads up: this only fetches repos visible to the active token. Private orgs may need additional scope.
       </p>
     </div>
   );

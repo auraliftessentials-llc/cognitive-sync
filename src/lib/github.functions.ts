@@ -1,18 +1,33 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-// Sync GitHub repos for the authenticated user.
-// Uses the user-provided GitHub token stored in `profiles.bio`-style? No — we store it transiently in request.
-// To avoid persisting tokens, we accept the token at call time. The user enters it on /github page.
+/**
+ * Whether a server-side GITHUB_TOKEN is configured. Used by the UI to decide
+ * whether to require the user to paste a personal token.
+ */
+export const getGithubTokenStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    return { configured: Boolean(process.env.GITHUB_TOKEN) };
+  });
+
+/**
+ * Sync GitHub repos for the authenticated user.
+ * Uses the server-stored GITHUB_TOKEN by default. Callers may optionally pass
+ * an override token (e.g. to sync from a different account).
+ */
 export const syncGithubRepos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { token: string }) => d)
+  .inputValidator((d: { token?: string } | undefined) => d ?? {})
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
-    const token = data.token?.trim();
-    if (!token) throw new Error("GitHub token is required");
+    const token = (data.token?.trim() || process.env.GITHUB_TOKEN || "").trim();
+    if (!token) {
+      throw new Error(
+        "No GitHub token available. Add a GITHUB_TOKEN backend secret or paste a personal token.",
+      );
+    }
 
-    // Fetch up to 100 repos for the authenticated user
     const res = await fetch("https://api.github.com/user/repos?per_page=100&sort=updated", {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -36,7 +51,6 @@ export const syncGithubRepos = createServerFn({ method: "POST" })
       if (r.archived) tags.push("archived");
       if (r.private) tags.push("private");
 
-      // Look up existing by repo_url for this user
       const { data: existing } = await supabase
         .from("projects")
         .select("id")
