@@ -131,7 +131,89 @@ function Dashboard() {
           )}
         </section>
       </div>
+
+      <ResendCard userEmail={user?.email ?? ""} />
     </div>
+  );
+}
+
+function ResendCard({ userEmail }: { userEmail: string }) {
+  const [status, setStatus] = useState<ResendStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [to, setTo] = useState(userEmail);
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => { setTo(userEmail); }, [userEmail]);
+
+  const refresh = async () => {
+    setLoading(true);
+    try { setStatus(await getResendStatus()); }
+    catch (e: any) { setStatus({ ok: false, configured: false, domains: [], message: e?.message ?? "Failed to load" }); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { refresh(); }, []);
+
+  const send = async () => {
+    if (!to) return toast.error("Enter a recipient email");
+    setSending(true);
+    try {
+      const r = await sendResendTest({ data: { to } });
+      toast.success(r.message);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Send failed");
+    } finally { setSending(false); }
+  };
+
+  const verified = status?.domains.filter((d) => d.status === "verified") ?? [];
+
+  return (
+    <section className="cathedral-card rounded-xl p-5 mt-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Mail className="h-4 w-4 text-brand-blue" />
+          <h2 className="font-display text-lg tracking-wider">RESEND</h2>
+          {loading ? (
+            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+          ) : status?.ok ? (
+            <CheckCircle2 className="h-4 w-4 text-brand-green" />
+          ) : (
+            <XCircle className="h-4 w-4 text-destructive" />
+          )}
+        </div>
+        <Button size="sm" variant="outline" onClick={refresh} disabled={loading}>Refresh</Button>
+      </div>
+
+      <p className="text-xs text-muted-foreground mb-3">{status?.message ?? "Checking…"}</p>
+
+      {status?.domains && status.domains.length > 0 && (
+        <ul className="text-xs space-y-1 mb-4">
+          {status.domains.map((d) => (
+            <li key={d.id} className="flex items-center justify-between border-b border-border/40 py-1">
+              <span className="font-mono">{d.name}</span>
+              <span className={`uppercase tracking-wider text-[10px] ${d.status === "verified" ? "text-brand-green" : "text-muted-foreground"}`}>{d.status}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Input
+          type="email"
+          placeholder="recipient@example.com"
+          value={to}
+          onChange={(e) => setTo(e.target.value)}
+          className="flex-1"
+        />
+        <Button onClick={send} disabled={sending || !status?.configured} className="bg-brand-blue text-white hover:bg-brand-blue/90">
+          {sending ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <Mail className="h-3 w-3 mr-2" />}
+          Send test
+        </Button>
+      </div>
+      {verified.length === 0 && status?.configured && (
+        <p className="text-[11px] text-muted-foreground mt-2">No verified domain yet — sending from <code>onboarding@resend.dev</code> (test mode, only delivers to your own Resend account email).</p>
+      )}
+    </section>
   );
 }
 
