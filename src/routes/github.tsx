@@ -1,13 +1,30 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Github, Shield, CheckCircle2, KeyRound } from "lucide-react";
+import { Github, Shield, CheckCircle2, KeyRound, RefreshCw } from "lucide-react";
 import { syncGithubRepos, getGithubTokenStatus } from "@/lib/github.functions";
 import { toast } from "sonner";
+
+const LAST_SYNC_KEY = "github:last-synced-at";
+
+function formatRelative(iso: string | null): string {
+  if (!iso) return "never";
+  const then = new Date(iso).getTime();
+  const diff = Date.now() - then;
+  if (diff < 0) return "just now";
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
+}
 
 export const Route = createFileRoute("/github")({
   component: () => (
