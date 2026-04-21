@@ -30,7 +30,7 @@ export type BrainMessage = {
   tool_calls?: any[];
 };
 
-export type ProviderId = "xai" | "lovable-openai" | "lovable-google";
+export type ProviderId = "xai" | "openai-direct" | "lovable-openai" | "lovable-google";
 
 export type BrainProvider = {
   id: ProviderId;
@@ -50,6 +50,15 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
     endpoint: "https://api.x.ai/v1/chat/completions",
     apiKeyEnv: "XAI_API_KEY",
     modelOnWire: "grok-4",
+    supportsTools: true,
+  },
+  "openai-direct": {
+    id: "openai-direct",
+    label: "GPT-5 (OpenAI direct)",
+    model: "openai/gpt-5",
+    endpoint: "https://api.openai.com/v1/chat/completions",
+    apiKeyEnv: "OPENAI_API_KEY",
+    modelOnWire: "gpt-5",
     supportsTools: true,
   },
   "lovable-openai": {
@@ -72,7 +81,14 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
   },
 };
 
-export const DEFAULT_FALLBACK_CHAIN: ProviderId[] = ["xai", "lovable-openai", "lovable-google"];
+// Order = priority. Each provider is tried in turn; missing keys are skipped
+// so adding OPENAI_API_KEY automatically activates the direct OpenAI hop.
+export const DEFAULT_FALLBACK_CHAIN: ProviderId[] = [
+  "xai",
+  "openai-direct",
+  "lovable-openai",
+  "lovable-google",
+];
 
 export type BrainStatus = "ok" | "degraded" | "down" | "unconfigured";
 
