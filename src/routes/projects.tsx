@@ -171,6 +171,41 @@ function Projects() {
         </div>
       </div>
 
+      {orgs.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 mb-6">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mr-1">Org</span>
+          <button
+            onClick={() => setActiveOrg(null)}
+            className={`text-xs px-2.5 py-1 rounded-full border transition ${
+              activeOrg === null
+                ? "bg-primary/15 text-primary border-primary/40"
+                : "border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+            }`}
+          >
+            All
+            <span className="ml-1 opacity-60">{items.length}</span>
+          </button>
+          {orgs.map((org) => {
+            const count = items.filter((p) => (p.tags ?? []).includes(`${ORG_PREFIX}${org}`)).length;
+            const active = activeOrg === org;
+            return (
+              <button
+                key={org}
+                onClick={() => setActiveOrg(active ? null : org)}
+                className={`text-xs px-2.5 py-1 rounded-full border transition ${
+                  active
+                    ? "bg-primary/15 text-primary border-primary/40"
+                    : "border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+                }`}
+              >
+                {org}
+                <span className="ml-1 opacity-60">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {filtered.length === 0 ? (
         <div className="glow-border rounded-lg p-10 text-center text-muted-foreground">
           No projects yet. Add one or sync GitHub.
