@@ -42,7 +42,9 @@ import {
   Inbox,
   UserCheck,
   Unplug,
+  Terminal,
 } from "lucide-react";
+import { CliTokensPanel } from "@/components/CliTokensPanel";
 import {
   getAdminOverview,
   setUserRole,
