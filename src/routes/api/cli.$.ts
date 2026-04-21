@@ -260,6 +260,94 @@ const ROUTES: Record<string, Handler> = {
     if (error) return jsonResponse({ error: error.message }, { status: 500 });
     return jsonResponse({ suggestions: data ?? [] });
   },
+
+  "GET schedules": async (_req, p) => {
+    const { data, error } = await supabaseAdmin
+      .from("cli_schedules").select("*").eq("user_id", p.userId)
+      .order("created_at", { ascending: false });
+    if (error) return jsonResponse({ error: error.message }, { status: 500 });
+    return jsonResponse({ schedules: data ?? [] });
+  },
+
+  "POST schedules": async (req, p) => {
+    const body = await req.json().catch(() => ({}));
+    const { name, cron, prompt, agent_slug, model } = body ?? {};
+    if (!name || !cron || !prompt) return jsonResponse({ error: "name, cron, prompt required" }, { status: 400 });
+    const { data, error } = await supabaseAdmin.from("cli_schedules").insert({
+      user_id: p.userId, name, cron, prompt,
+      agent_slug: agent_slug ?? "ceo-grok", model: model ?? null,
+    }).select("*").single();
+    if (error) return jsonResponse({ error: error.message }, { status: 500 });
+    return jsonResponse({ schedule: data });
+  },
+
+  "POST schedules/toggle": async (req, p) => {
+    const body = await req.json().catch(() => ({}));
+    if (!body?.id) return jsonResponse({ error: "id required" }, { status: 400 });
+    const { data: cur } = await supabaseAdmin.from("cli_schedules").select("enabled,user_id").eq("id", body.id).single();
+    if (!cur || cur.user_id !== p.userId) return jsonResponse({ error: "not found" }, { status: 404 });
+    const { error } = await supabaseAdmin.from("cli_schedules").update({ enabled: !cur.enabled }).eq("id", body.id);
+    if (error) return jsonResponse({ error: error.message }, { status: 500 });
+    return jsonResponse({ ok: true, enabled: !cur.enabled });
+  },
+
+  "POST schedules/delete": async (req, p) => {
+    const body = await req.json().catch(() => ({}));
+    if (!body?.id) return jsonResponse({ error: "id required" }, { status: 400 });
+    const { error } = await supabaseAdmin.from("cli_schedules").delete().eq("id", body.id).eq("user_id", p.userId);
+    if (error) return jsonResponse({ error: error.message }, { status: 500 });
+    return jsonResponse({ ok: true });
+  },
+
+  "POST schedules/run": async (req, p) => {
+    const body = await req.json().catch(() => ({}));
+    if (!body?.id) return jsonResponse({ error: "id required" }, { status: 400 });
+    const { data: s } = await supabaseAdmin.from("cli_schedules").select("*").eq("id", body.id).eq("user_id", p.userId).single();
+    if (!s) return jsonResponse({ error: "not found" }, { status: 404 });
+    const { data: agents } = await supabaseAdmin.from("agents").select("*")
+      .or(`slug.eq.${s.agent_slug},and(is_system.eq.true,slug.eq.ceo-grok)`).limit(2);
+    const agent = agents?.find((a) => a.slug === s.agent_slug) ?? agents?.[0];
+    if (!agent) return jsonResponse({ error: "no agent" }, { status: 404 });
+    const messages: BrainMessage[] = [
+      { role: "system", content: agent.system_prompt },
+      { role: "user", content: s.prompt },
+    ];
+    try {
+      let final = "";
+      for (let r = 0; r < 3; r++) {
+        const resp = await callBrain({
+          messages, tools: TOOL_SCHEMAS as any, tool_choice: "auto",
+          preferredModel: s.model ?? agent.default_model,
+          reasoning_effort: (agent.reasoning_effort ?? "medium") as any,
+        });
+        if (resp.message.tool_calls?.length) {
+          messages.push({ role: "assistant", content: resp.message.content ?? "", tool_calls: resp.message.tool_calls });
+          for (const tc of resp.message.tool_calls) {
+            const name = tc.function?.name as ToolName;
+            let args: any = {}; try { args = JSON.parse(tc.function?.arguments ?? "{}"); } catch {}
+            try {
+              const out = await executeTool(p.userId, name, args);
+              messages.push({ role: "tool", tool_call_id: tc.id, name, content: JSON.stringify(out).slice(0, 12000) });
+            } catch (e: any) {
+              messages.push({ role: "tool", tool_call_id: tc.id, name, content: JSON.stringify({ error: e?.message }) });
+            }
+          }
+          continue;
+        }
+        final = resp.message.content ?? "";
+        break;
+      }
+      await supabaseAdmin.from("cli_schedules").update({
+        last_run_at: new Date().toISOString(), last_status: "ok", last_output: final.slice(0, 8000),
+      }).eq("id", body.id);
+      return jsonResponse({ ok: true, output: final });
+    } catch (e: any) {
+      await supabaseAdmin.from("cli_schedules").update({
+        last_run_at: new Date().toISOString(), last_status: "error", last_output: e?.message ?? "error",
+      }).eq("id", body.id);
+      return jsonResponse({ ok: false, error: e?.message }, { status: 500 });
+    }
+  },
 };
 
 async function dispatch(method: string, path: string, request: Request): Promise<Response> {
