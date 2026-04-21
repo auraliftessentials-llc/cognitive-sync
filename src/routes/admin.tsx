@@ -1000,6 +1000,176 @@ function AdminPage() {
               )}
             </div>
           </TabsContent>
+
+          {/* ZOHO */}
+          <TabsContent value="zoho" className="mt-6 space-y-6">
+            <Card className="p-6 border-primary/30">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="flex items-start gap-3">
+                  <div className="h-12 w-12 rounded-md bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center">
+                    <Plug className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-xl tracking-wider">ZOHO CONNECTION</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Mail · CRM · Accounts. One OAuth login covers all your Zoho-authenticated emails.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {zohoConn ? (
+                    <>
+                      <Button variant="outline" size="sm" onClick={loadZohoStatus}>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Refresh
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={handleDisconnectZoho}>
+                        <Unplug className="h-4 w-4 mr-2" />
+                        Disconnect
+                      </Button>
+                    </>
+                  ) : (
+                    <Button size="sm" onClick={connectZoho} disabled={zohoLoading}>
+                      <Plug className="h-4 w-4 mr-2" />
+                      {zohoLoading ? "Connecting…" : "Connect Zoho"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {zohoConn ? (
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-3 rounded-md border border-border/60 bg-muted/10">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                      Connected as
+                    </div>
+                    <div className="font-mono text-sm flex items-center gap-2">
+                      <UserCheck className="h-3.5 w-3.5 text-primary" />
+                      {zohoConn.email}
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-md border border-border/60 bg-muted/10">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                      Token expires
+                    </div>
+                    <div className="font-mono text-sm">
+                      {new Date(zohoConn.expires_at).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-md border border-border/60 bg-muted/10">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                      Scopes
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {zohoConn.scopes.map((s) => (
+                        <Badge key={s} variant="outline" className="text-[10px] font-mono">
+                          {s.split(".").slice(-2).join(".")}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-6 p-4 rounded-md border border-dashed border-border/60 bg-muted/5 text-sm text-muted-foreground">
+                  Click <span className="text-foreground font-medium">Connect Zoho</span> to authorize.
+                  After Zoho login, all of your Zoho-managed emails (e.g. ryanpuddy@profireaper.com) will
+                  flow through this connection.
+                </div>
+              )}
+            </Card>
+
+            {zohoConn && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Mail */}
+                <Card className="p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Inbox className="h-4 w-4 text-primary" />
+                      <h3 className="font-display tracking-wider text-sm">RECENT MAIL</h3>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={loadZohoMail} disabled={zohoMailLoading}>
+                      <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${zohoMailLoading ? "animate-spin" : ""}`} />
+                      Load
+                    </Button>
+                  </div>
+                  <div className="space-y-2 max-h-[480px] overflow-y-auto">
+                    {zohoMail.length === 0 ? (
+                      <div className="text-xs text-muted-foreground py-8 text-center">
+                        {zohoMailLoading ? "Loading…" : "Click Load to fetch recent messages."}
+                      </div>
+                    ) : (
+                      zohoMail.map((m: any, i: number) => (
+                        <div
+                          key={m.messageId ?? i}
+                          className="p-3 rounded-md border border-border/40 bg-muted/5 hover:bg-muted/10 transition-colors"
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <div className="font-mono text-xs text-primary truncate">
+                              {m.fromAddress ?? m.sender ?? "—"}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                              {m.receivedTime
+                                ? new Date(Number(m.receivedTime)).toLocaleDateString()
+                                : ""}
+                            </div>
+                          </div>
+                          <div className="text-sm font-medium truncate">{m.subject ?? "(no subject)"}</div>
+                          <div className="text-xs text-muted-foreground truncate mt-0.5">
+                            {m.summary ?? ""}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </Card>
+
+                {/* CRM Leads */}
+                <Card className="p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      <h3 className="font-display tracking-wider text-sm">CRM LEADS</h3>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={loadZohoLeads} disabled={zohoLeadsLoading}>
+                      <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${zohoLeadsLoading ? "animate-spin" : ""}`} />
+                      Load
+                    </Button>
+                  </div>
+                  <div className="space-y-2 max-h-[480px] overflow-y-auto">
+                    {zohoLeads.length === 0 ? (
+                      <div className="text-xs text-muted-foreground py-8 text-center">
+                        {zohoLeadsLoading ? "Loading…" : "Click Load to fetch recent leads."}
+                      </div>
+                    ) : (
+                      zohoLeads.map((l: any) => (
+                        <div
+                          key={l.id}
+                          className="p-3 rounded-md border border-border/40 bg-muted/5 hover:bg-muted/10 transition-colors"
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <div className="text-sm font-medium truncate">
+                              {l.Full_Name ?? `${l.First_Name ?? ""} ${l.Last_Name ?? ""}`.trim() || "—"}
+                            </div>
+                            {l.Lead_Status && (
+                              <Badge variant="outline" className="text-[10px] shrink-0">
+                                {l.Lead_Status}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground font-mono truncate">
+                            {l.Email ?? ""}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            {l.Company ?? ""}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </Card>
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
 
