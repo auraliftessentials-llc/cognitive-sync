@@ -218,6 +218,6 @@ export async function runScheduleOnce(
     return { ok: false, scheduleId, attempts, error: lastErr, durationMs: Date.now() - t0 };
   } finally {
     // 5) Always release the lock.
-    await supabaseAdmin.rpc("release_schedule", { _id: scheduleId }).catch(() => {});
+    try { await supabaseAdmin.rpc("release_schedule", { _id: scheduleId }); } catch { /* best effort */ }
   }
 }
