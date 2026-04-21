@@ -26,6 +26,8 @@ type P = {
   tech_stack: string[]; tags: string[]; notes: string | null; priority: number;
 };
 
+const ORG_PREFIX = "org:";
+
 const empty = {
   name: "", description: "", status: "active", repo_url: "", live_url: "",
   tech_stack: "", tags: "", notes: "", priority: 3,
@@ -37,6 +39,7 @@ function Projects() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
   const [filter, setFilter] = useState("");
+  const [activeOrg, setActiveOrg] = useState<string | null>(null);
   const [editing, setEditing] = useState<P | null>(null);
   const [editForm, setEditForm] = useState({ name: "", status: "active", priority: 3, notes: "" });
 
@@ -104,12 +107,27 @@ function Projects() {
     }
   };
 
-  const filtered = items.filter((p) =>
-    !filter ||
-    p.name.toLowerCase().includes(filter.toLowerCase()) ||
-    (p.description ?? "").toLowerCase().includes(filter.toLowerCase()) ||
-    p.tags.some((t) => t.toLowerCase().includes(filter.toLowerCase())),
-  );
+  // Distinct orgs from tags like "org:acme-co"
+  const orgs = Array.from(
+    new Set(
+      items.flatMap((p) =>
+        (p.tags ?? [])
+          .filter((t) => t.startsWith(ORG_PREFIX))
+          .map((t) => t.slice(ORG_PREFIX.length)),
+      ),
+    ),
+  ).sort();
+
+  const filtered = items.filter((p) => {
+    const matchesText =
+      !filter ||
+      p.name.toLowerCase().includes(filter.toLowerCase()) ||
+      (p.description ?? "").toLowerCase().includes(filter.toLowerCase()) ||
+      p.tags.some((t) => t.toLowerCase().includes(filter.toLowerCase()));
+    const matchesOrg =
+      !activeOrg || (p.tags ?? []).includes(`${ORG_PREFIX}${activeOrg}`);
+    return matchesText && matchesOrg;
+  });
 
   return (
     <div className="p-8 max-w-6xl">
@@ -152,6 +170,41 @@ function Projects() {
           </Dialog>
         </div>
       </div>
+
+      {orgs.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 mb-6">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mr-1">Org</span>
+          <button
+            onClick={() => setActiveOrg(null)}
+            className={`text-xs px-2.5 py-1 rounded-full border transition ${
+              activeOrg === null
+                ? "bg-primary/15 text-primary border-primary/40"
+                : "border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+            }`}
+          >
+            All
+            <span className="ml-1 opacity-60">{items.length}</span>
+          </button>
+          {orgs.map((org) => {
+            const count = items.filter((p) => (p.tags ?? []).includes(`${ORG_PREFIX}${org}`)).length;
+            const active = activeOrg === org;
+            return (
+              <button
+                key={org}
+                onClick={() => setActiveOrg(active ? null : org)}
+                className={`text-xs px-2.5 py-1 rounded-full border transition ${
+                  active
+                    ? "bg-primary/15 text-primary border-primary/40"
+                    : "border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+                }`}
+              >
+                {org}
+                <span className="ml-1 opacity-60">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <div className="glow-border rounded-lg p-10 text-center text-muted-foreground">
