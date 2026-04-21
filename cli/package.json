@@ -1,0 +1,24 @@
+{
+  "name": "@profireaper/neural-cli",
+  "version": "0.1.0",
+  "description": "Command-line interface for the Neural Guide Sync brain — run agent tools, query your data, and trigger jobs from your terminal.",
+  "bin": {
+    "neural": "./bin/neural.mjs"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "README.md"
+  ],
+  "scripts": {
+    "start": "node bin/neural.mjs",
+    "publish:beta": "npm publish --access public --tag beta"
+  },
+  "keywords": ["cli", "ai", "agent", "zoho", "github", "perplexity", "cloudflare"],
+  "license": "MIT",
+  "author": "ProFireaper"
+}
