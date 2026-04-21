@@ -19,6 +19,7 @@ import type { ReactNode } from "react";
 const navItems = [
   { to: "/dashboard", label: "Pulse", icon: Brain },
   { to: "/console", label: "Console", icon: Terminal },
+  { to: "/terminal", label: "Web Term", icon: Terminal },
   { to: "/agents", label: "Agents", icon: Bot },
   { to: "/projects", label: "Library", icon: FolderGit2 },
   { to: "/suggestions", label: "Moves", icon: Sparkles },

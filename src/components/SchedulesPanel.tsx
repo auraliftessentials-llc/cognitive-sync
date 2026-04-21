@@ -5,13 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Clock, Plus, RefreshCw, Trash2, Play } from "lucide-react";
+import { Clock, Plus, RefreshCw, Trash2, Play, Mail, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   listSchedules,
   createSchedule,
   toggleSchedule,
   deleteSchedule,
+  runScheduleNow,
   type CliSchedule,
 } from "@/lib/cli-schedules.functions";
 
@@ -26,9 +27,11 @@ export function SchedulesPanel() {
   const [rows, setRows] = useState<CliSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [runningId, setRunningId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [cron, setCron] = useState("0 9 * * *");
   const [prompt, setPrompt] = useState("");
+  const [notifyEmail, setNotifyEmail] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -50,8 +53,11 @@ export function SchedulesPanel() {
     }
     setCreating(true);
     try {
-      await createSchedule({ data: { name: name.trim(), cron: cron.trim(), prompt: prompt.trim() } });
-      setName(""); setPrompt("");
+      await createSchedule({ data: {
+        name: name.trim(), cron: cron.trim(), prompt: prompt.trim(),
+        notify_email: notifyEmail.trim() || undefined,
+      } });
+      setName(""); setPrompt(""); setNotifyEmail("");
       await load();
       toast.success("Schedule created");
     } catch (e: any) {
@@ -79,6 +85,20 @@ export function SchedulesPanel() {
       toast.success("Deleted");
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to delete");
+    }
+  };
+
+  const handleRunNow = async (s: CliSchedule) => {
+    setRunningId(s.id);
+    try {
+      const r = await runScheduleNow({ data: { id: s.id } });
+      toast.success(`Ran "${s.name}"`, { description: r.output?.slice(0, 120) });
+      await load();
+    } catch (e: any) {
+      toast.error(`"${s.name}" failed`, { description: e?.message ?? "" });
+      await load();
+    } finally {
+      setRunningId(null);
     }
   };
 
@@ -113,6 +133,12 @@ export function SchedulesPanel() {
           onChange={(e) => setPrompt(e.target.value)}
           rows={3}
         />
+        <Input
+          placeholder="Notify on failure (optional email)"
+          value={notifyEmail}
+          onChange={(e) => setNotifyEmail(e.target.value)}
+          type="email"
+        />
         <Button onClick={handleCreate} disabled={creating} size="sm">
           <Plus className="h-3.5 w-3.5 mr-1.5" />
           Create schedule
@@ -132,6 +158,11 @@ export function SchedulesPanel() {
                 <Badge variant="outline" className="text-[10px]">{s.agent_slug}</Badge>
                 {s.last_status === "ok" && <Badge variant="default" className="text-[10px]">ok</Badge>}
                 {s.last_status === "error" && <Badge variant="destructive" className="text-[10px]">error</Badge>}
+                {s.notify_email && (
+                  <Badge variant="outline" className="text-[10px] gap-1">
+                    <Mail className="h-2.5 w-2.5" /> {s.notify_email}
+                  </Badge>
+                )}
               </div>
               <p className="text-[11px] text-muted-foreground line-clamp-2">{s.prompt}</p>
               {s.last_run_at && (
@@ -151,6 +182,19 @@ export function SchedulesPanel() {
               )}
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleRunNow(s)}
+                disabled={runningId === s.id}
+                title="Run now"
+              >
+                {runningId === s.id ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Play className="h-3.5 w-3.5" />
+                )}
+              </Button>
               <Switch checked={s.enabled} onCheckedChange={() => handleToggle(s)} />
               <Button size="sm" variant="ghost" onClick={() => handleDelete(s.id)}>
                 <Trash2 className="h-3.5 w-3.5" />
