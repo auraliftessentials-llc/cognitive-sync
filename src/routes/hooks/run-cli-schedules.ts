@@ -1,19 +1,19 @@
 /**
- * Cron tick: every minute, run any enabled cli_schedules whose cron expression matches now.
- * Triggered by pg_cron / external cron at /hooks/run-cli-schedules.
+ * Cron tick: every minute, run any enabled cli_schedules whose cron expression
+ * matches now. Triggered by pg_cron at /hooks/run-cli-schedules.
  *
- * For each due schedule we call the same logic as `agent/run` (non-streaming) and
- * persist the output back onto the schedule row so the user can see history.
- * On failure, the operator is notified via Resend (rate-limited to once per
- * 30 minutes per schedule to prevent flooding).
+ * Reliability:
+ *   - Bearer auth from pg_cron secret.
+ *   - Each due schedule executed via the shared runScheduleOnce engine
+ *     (atomic locking + retry/backoff + per-run history + email-on-failure).
+ *   - Heartbeat row written every tick so the dashboard can prove cron is alive
+ *     even when no schedules are due.
+ *   - Schedules execute in parallel (Promise.allSettled) so a slow one can't
+ *     block the others.
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { callBrain, type BrainMessage } from "@/lib/brain.server";
-import { executeTool, TOOL_SCHEMAS, type ToolName } from "@/lib/zoho-tools.server";
-import { sendNotifyEmail } from "@/lib/email-notify.server";
-
-const ERROR_EMAIL_COOLDOWN_MS = 30 * 60 * 1000; // 30 min
+import { runScheduleOnce } from "@/lib/schedule-runner.server";
 
 function cronMatches(expr: string, now: Date): boolean {
   const fields = expr.trim().split(/\s+/);
@@ -43,113 +43,56 @@ function matchField(field: string, value: number): boolean {
   });
 }
 
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
-}
-
 export const Route = createFileRoute("/hooks/run-cli-schedules")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const t0 = Date.now();
         const auth = request.headers.get("authorization") ?? "";
         if (!auth.startsWith("Bearer ")) {
           return new Response(JSON.stringify({ error: "missing auth" }), { status: 401 });
         }
+
         const now = new Date();
         const { data: schedules, error } = await supabaseAdmin
-          .from("cli_schedules")
-          .select("*")
-          .eq("enabled", true);
+          .from("cli_schedules").select("*").eq("enabled", true);
+
         if (error) {
+          await supabaseAdmin.from("cron_heartbeat").insert({
+            job: "run-cli-schedules", due_count: 0, ran_count: 0,
+            error_count: 1, duration_ms: Date.now() - t0,
+            notes: `load failed: ${error.message}`,
+          });
           return new Response(JSON.stringify({ error: error.message }), { status: 500 });
         }
 
         const due = (schedules ?? []).filter((s) => cronMatches(s.cron, now));
-        const results: any[] = [];
 
-        for (const s of due) {
-          try {
-            const { data: agents } = await supabaseAdmin
-              .from("agents")
-              .select("*")
-              .or(`slug.eq.${s.agent_slug},and(is_system.eq.true,slug.eq.ceo-grok)`)
-              .limit(2);
-            const agent = agents?.find((a) => a.slug === s.agent_slug) ?? agents?.[0];
-            if (!agent) throw new Error("No agent");
+        // Run all due schedules in parallel — one slow agent must not block others.
+        const settled = await Promise.allSettled(
+          due.map((s) => runScheduleOnce(s.id, "cron")),
+        );
 
-            const messages: BrainMessage[] = [
-              { role: "system", content: agent.system_prompt },
-              { role: "user", content: s.prompt },
-            ];
-
-            let finalText = "";
-            for (let r = 0; r < 3; r++) {
-              const resp = await callBrain({
-                messages,
-                tools: TOOL_SCHEMAS as any,
-                tool_choice: "auto",
-                preferredModel: s.model ?? agent.default_model,
-                reasoning_effort: (agent.reasoning_effort ?? "medium") as any,
-              });
-              const choice = resp.message;
-              if (choice.tool_calls?.length) {
-                messages.push({ role: "assistant", content: choice.content ?? "", tool_calls: choice.tool_calls });
-                for (const tc of choice.tool_calls) {
-                  const name = tc.function?.name as ToolName;
-                  let args: any = {}; try { args = JSON.parse(tc.function?.arguments ?? "{}"); } catch {}
-                  try {
-                    const out = await executeTool(s.user_id, name, args);
-                    messages.push({ role: "tool", tool_call_id: tc.id, name, content: JSON.stringify(out).slice(0, 12000) });
-                  } catch (e: any) {
-                    messages.push({ role: "tool", tool_call_id: tc.id, name, content: JSON.stringify({ error: e?.message }) });
-                  }
-                }
-                continue;
-              }
-              finalText = choice.content ?? "";
-              break;
-            }
-
-            await supabaseAdmin
-              .from("cli_schedules")
-              .update({ last_run_at: now.toISOString(), last_status: "ok", last_output: finalText.slice(0, 8000) })
-              .eq("id", s.id);
-            results.push({ id: s.id, name: s.name, ok: true });
-          } catch (e: any) {
-            const msg = e?.message ?? String(e);
-            await supabaseAdmin
-              .from("cli_schedules")
-              .update({ last_run_at: now.toISOString(), last_status: "error", last_output: msg })
-              .eq("id", s.id);
-
-            // Email on failure (rate-limited per schedule)
-            if (s.notify_email) {
-              const lastEmailedAt = s.last_error_emailed_at ? new Date(s.last_error_emailed_at).getTime() : 0;
-              if (Date.now() - lastEmailedAt > ERROR_EMAIL_COOLDOWN_MS) {
-                const r = await sendNotifyEmail({
-                  to: s.notify_email,
-                  subject: `[Merkabah] Schedule failed: ${s.name}`,
-                  html: `<h2>Scheduled run failed</h2>
-                    <p><strong>${s.name}</strong></p>
-                    <p style="font-family:monospace;background:#f5f5f5;padding:8px;border-radius:4px">${escapeHtml(msg)}</p>
-                    <p style="color:#666;font-size:12px">Cron: <code>${s.cron}</code> · Agent: ${s.agent_slug} · ${now.toISOString()}</p>
-                    <p style="color:#666;font-size:11px">You won't get another email about this schedule for 30 minutes.</p>`,
-                });
-                if (r.ok) {
-                  await supabaseAdmin
-                    .from("cli_schedules")
-                    .update({ last_error_emailed_at: new Date().toISOString() })
-                    .eq("id", s.id);
-                }
-              }
-            }
-            results.push({ id: s.id, name: s.name, ok: false, error: msg });
-          }
-        }
-
-        return new Response(JSON.stringify({ ok: true, ran: results.length, results }), {
-          headers: { "Content-Type": "application/json" },
+        const results = settled.map((r, i) => {
+          if (r.status === "fulfilled") return { id: due[i].id, name: due[i].name, ...r.value };
+          return { id: due[i].id, name: due[i].name, ok: false, error: String(r.reason).slice(0, 300) };
         });
+
+        const ranCount = results.filter((r) => r.ok).length;
+        const errCount = results.filter((r) => !r.ok).length;
+
+        await supabaseAdmin.from("cron_heartbeat").insert({
+          job: "run-cli-schedules",
+          due_count: due.length,
+          ran_count: ranCount,
+          error_count: errCount,
+          duration_ms: Date.now() - t0,
+        });
+
+        return new Response(
+          JSON.stringify({ ok: true, due: due.length, ran: ranCount, errors: errCount, results }),
+          { headers: { "Content-Type": "application/json" } },
+        );
       },
     },
   },

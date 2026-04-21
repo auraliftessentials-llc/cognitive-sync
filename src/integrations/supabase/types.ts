@@ -260,9 +260,66 @@ export type Database = {
         }
         Relationships: []
       }
+      cli_schedule_runs: {
+        Row: {
+          attempt: number
+          duration_ms: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          model: string | null
+          output: string | null
+          provider: string | null
+          schedule_id: string
+          started_at: string
+          status: string
+          trigger: string
+          user_id: string
+        }
+        Insert: {
+          attempt?: number
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          model?: string | null
+          output?: string | null
+          provider?: string | null
+          schedule_id: string
+          started_at?: string
+          status?: string
+          trigger?: string
+          user_id: string
+        }
+        Update: {
+          attempt?: number
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          model?: string | null
+          output?: string | null
+          provider?: string | null
+          schedule_id?: string
+          started_at?: string
+          status?: string
+          trigger?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cli_schedule_runs_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "cli_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cli_schedules: {
         Row: {
           agent_slug: string
+          consecutive_failures: number
           created_at: string
           cron: string
           enabled: boolean
@@ -271,15 +328,19 @@ export type Database = {
           last_output: string | null
           last_run_at: string | null
           last_status: string | null
+          lock_until: string | null
           model: string | null
           name: string
           notify_email: string | null
           prompt: string
+          total_failures: number
+          total_runs: number
           updated_at: string
           user_id: string
         }
         Insert: {
           agent_slug?: string
+          consecutive_failures?: number
           created_at?: string
           cron: string
           enabled?: boolean
@@ -288,15 +349,19 @@ export type Database = {
           last_output?: string | null
           last_run_at?: string | null
           last_status?: string | null
+          lock_until?: string | null
           model?: string | null
           name: string
           notify_email?: string | null
           prompt: string
+          total_failures?: number
+          total_runs?: number
           updated_at?: string
           user_id: string
         }
         Update: {
           agent_slug?: string
+          consecutive_failures?: number
           created_at?: string
           cron?: string
           enabled?: boolean
@@ -305,10 +370,13 @@ export type Database = {
           last_output?: string | null
           last_run_at?: string | null
           last_status?: string | null
+          lock_until?: string | null
           model?: string | null
           name?: string
           notify_email?: string | null
           prompt?: string
+          total_failures?: number
+          total_runs?: number
           updated_at?: string
           user_id?: string
         }
@@ -387,6 +455,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cron_heartbeat: {
+        Row: {
+          due_count: number
+          duration_ms: number | null
+          error_count: number
+          id: string
+          job: string
+          notes: string | null
+          ran_count: number
+          ticked_at: string
+        }
+        Insert: {
+          due_count?: number
+          duration_ms?: number | null
+          error_count?: number
+          id?: string
+          job: string
+          notes?: string | null
+          ran_count?: number
+          ticked_at?: string
+        }
+        Update: {
+          due_count?: number
+          duration_ms?: number | null
+          error_count?: number
+          id?: string
+          job?: string
+          notes?: string | null
+          ran_count?: number
+          ticked_at?: string
+        }
+        Relationships: []
       }
       feature_flags: {
         Row: {
@@ -799,6 +900,10 @@ export type Database = {
           last_sign_in_at: string
         }[]
       }
+      claim_schedule: {
+        Args: { _id: string; _lock_seconds?: number }
+        Returns: boolean
+      }
       find_cli_token_user: {
         Args: { _hash: string }
         Returns: {
@@ -826,6 +931,7 @@ export type Database = {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
       }
+      release_schedule: { Args: { _id: string }; Returns: undefined }
       workspace_role_of: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: Database["public"]["Enums"]["workspace_role"]
