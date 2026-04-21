@@ -253,6 +253,67 @@ function AdminPage() {
     }
   };
 
+  const loadZohoStatus = async () => {
+    try {
+      const res = await getZohoStatus();
+      setZohoConn(res.connection);
+    } catch {
+      /* silent — likely no connection yet */
+    }
+  };
+
+  const connectZoho = async () => {
+    setZohoLoading(true);
+    try {
+      const res = await getZohoAuthUrl();
+      if (!res.configured) {
+        toast.error("Zoho not configured. Set ZOHO_CLIENT_ID and ZOHO_CLIENT_SECRET.");
+        return;
+      }
+      window.location.href = res.url;
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to start Zoho OAuth");
+    } finally {
+      setZohoLoading(false);
+    }
+  };
+
+  const handleDisconnectZoho = async () => {
+    try {
+      await disconnectZoho();
+      setZohoConn(null);
+      setZohoMail([]);
+      setZohoLeads([]);
+      toast.success("Zoho disconnected");
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const loadZohoMail = async () => {
+    setZohoMailLoading(true);
+    try {
+      const res = await getZohoMail();
+      setZohoMail(res.messages ?? []);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to load mail");
+    } finally {
+      setZohoMailLoading(false);
+    }
+  };
+
+  const loadZohoLeads = async () => {
+    setZohoLeadsLoading(true);
+    try {
+      const res = await getZohoCrmLeads();
+      setZohoLeads(res.leads ?? []);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to load CRM leads");
+    } finally {
+      setZohoLeadsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!isSuperAdmin) return;
     loadOverview();
@@ -260,6 +321,12 @@ function AdminPage() {
     loadAudit();
     loadFlags();
     loadWorkspaces();
+    loadZohoStatus();
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("connected") === "1") {
+      toast.success("Zoho connected!");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuperAdmin]);
 
