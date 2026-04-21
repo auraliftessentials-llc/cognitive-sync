@@ -1,7 +1,7 @@
 {
   "name": "@profireaper/neural-cli",
-  "version": "0.1.0",
-  "description": "Command-line interface for the Neural Guide Sync brain — run agent tools, query your data, and trigger jobs from your terminal.",
+  "version": "0.2.0",
+  "description": "Streaming command-line interface for your Neural Guide Sync AI brain — chat with tool trace, live tail, schedule prompts, and trigger jobs from your terminal.",
   "bin": {
     "neural": "./bin/neural.mjs"
   },
@@ -12,13 +12,44 @@
   "files": [
     "bin",
     "lib",
-    "README.md"
+    "package.json",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "start": "node bin/neural.mjs",
-    "publish:beta": "npm publish --access public --tag beta"
+    "release": "node ./scripts/release.mjs",
+    "publish:beta": "npm publish --access public --tag beta",
+    "publish:latest": "npm publish --access public"
   },
-  "keywords": ["cli", "ai", "agent", "zoho", "github", "perplexity", "cloudflare"],
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4"
+  },
+  "keywords": [
+    "cli",
+    "ai",
+    "agent",
+    "streaming",
+    "tool-calling",
+    "zoho",
+    "github",
+    "perplexity",
+    "cloudflare",
+    "supabase",
+    "lovable"
+  ],
   "license": "MIT",
-  "author": "ProFireaper"
+  "author": "ProFireaper",
+  "homepage": "https://neural-guide-sync.lovable.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ProFireaper/neural-guide-sync.git",
+    "directory": "cli"
+  },
+  "bugs": {
+    "url": "https://github.com/ProFireaper/neural-guide-sync/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }
