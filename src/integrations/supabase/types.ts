@@ -267,11 +267,13 @@ export type Database = {
           cron: string
           enabled: boolean
           id: string
+          last_error_emailed_at: string | null
           last_output: string | null
           last_run_at: string | null
           last_status: string | null
           model: string | null
           name: string
+          notify_email: string | null
           prompt: string
           updated_at: string
           user_id: string
@@ -282,11 +284,13 @@ export type Database = {
           cron: string
           enabled?: boolean
           id?: string
+          last_error_emailed_at?: string | null
           last_output?: string | null
           last_run_at?: string | null
           last_status?: string | null
           model?: string | null
           name: string
+          notify_email?: string | null
           prompt: string
           updated_at?: string
           user_id: string
@@ -297,11 +301,13 @@ export type Database = {
           cron?: string
           enabled?: boolean
           id?: string
+          last_error_emailed_at?: string | null
           last_output?: string | null
           last_run_at?: string | null
           last_status?: string | null
           model?: string | null
           name?: string
+          notify_email?: string | null
           prompt?: string
           updated_at?: string
           user_id?: string

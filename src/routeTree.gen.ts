@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TerminalRouteImport } from './routes/terminal'
 import { Route as SuggestionsRouteImport } from './routes/suggestions'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -27,6 +28,11 @@ import { Route as ApiZohoCallbackRouteImport } from './routes/api/zoho.callback'
 import { Route as ApiCliStreamRouteImport } from './routes/api/cli.stream'
 import { Route as ApiCliSplatRouteImport } from './routes/api/cli.$'
 
+const TerminalRoute = TerminalRouteImport.update({
+  id: '/terminal',
+  path: '/terminal',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SuggestionsRoute = SuggestionsRouteImport.update({
   id: '/suggestions',
   path: '/suggestions',
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/suggestions': typeof SuggestionsRoute
+  '/terminal': typeof TerminalRoute
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/suggestions': typeof SuggestionsRoute
+  '/terminal': typeof TerminalRoute
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/suggestions': typeof SuggestionsRoute
+  '/terminal': typeof TerminalRoute
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/suggestions'
+    | '/terminal'
     | '/hooks/run-cli-schedules'
     | '/hooks/sync-github'
     | '/invite/$token'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/suggestions'
+    | '/terminal'
     | '/hooks/run-cli-schedules'
     | '/hooks/sync-github'
     | '/invite/$token'
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/suggestions'
+    | '/terminal'
     | '/hooks/run-cli-schedules'
     | '/hooks/sync-github'
     | '/invite/$token'
@@ -243,6 +255,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRoute
   SuggestionsRoute: typeof SuggestionsRoute
+  TerminalRoute: typeof TerminalRoute
   HooksRunCliSchedulesRoute: typeof HooksRunCliSchedulesRoute
   HooksSyncGithubRoute: typeof HooksSyncGithubRoute
   InviteTokenRoute: typeof InviteTokenRoute
@@ -253,6 +266,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terminal': {
+      id: '/terminal'
+      path: '/terminal'
+      fullPath: '/terminal'
+      preLoaderRoute: typeof TerminalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/suggestions': {
       id: '/suggestions'
       path: '/suggestions'
@@ -387,6 +407,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRoute,
   SuggestionsRoute: SuggestionsRoute,
+  TerminalRoute: TerminalRoute,
   HooksRunCliSchedulesRoute: HooksRunCliSchedulesRoute,
   HooksSyncGithubRoute: HooksSyncGithubRoute,
   InviteTokenRoute: InviteTokenRoute,
@@ -397,3 +418,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
