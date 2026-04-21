@@ -260,6 +260,45 @@ export type Database = {
         }
         Relationships: []
       }
+      cli_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          last_used_at: string | null
+          name: string
+          revoked_at: string | null
+          scopes: string[]
+          token_hash: string
+          token_prefix: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          name: string
+          revoked_at?: string | null
+          scopes?: string[]
+          token_hash: string
+          token_prefix: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          name?: string
+          revoked_at?: string | null
+          scopes?: string[]
+          token_hash?: string
+          token_prefix?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
@@ -704,6 +743,14 @@ export type Database = {
           email_confirmed_at: string
           id: string
           last_sign_in_at: string
+        }[]
+      }
+      find_cli_token_user: {
+        Args: { _hash: string }
+        Returns: {
+          scopes: string[]
+          token_id: string
+          user_id: string
         }[]
       }
       has_role: {
