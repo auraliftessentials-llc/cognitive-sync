@@ -21,6 +21,7 @@ import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as HooksSyncGithubRouteImport } from './routes/hooks/sync-github'
 import { Route as ApiZohoCallbackRouteImport } from './routes/api/zoho.callback'
 
 const SuggestionsRoute = SuggestionsRouteImport.update({
@@ -83,6 +84,11 @@ const InviteTokenRoute = InviteTokenRouteImport.update({
   path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HooksSyncGithubRoute = HooksSyncGithubRouteImport.update({
+  id: '/hooks/sync-github',
+  path: '/hooks/sync-github',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiZohoCallbackRoute = ApiZohoCallbackRouteImport.update({
   id: '/api/zoho/callback',
   path: '/api/zoho/callback',
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/suggestions': typeof SuggestionsRoute
+  '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
 }
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/suggestions': typeof SuggestionsRoute
+  '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
 }
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/suggestions': typeof SuggestionsRoute
+  '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
 }
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/suggestions'
+    | '/hooks/sync-github'
     | '/invite/$token'
     | '/api/zoho/callback'
   fileRoutesByTo: FileRoutesByTo
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/suggestions'
+    | '/hooks/sync-github'
     | '/invite/$token'
     | '/api/zoho/callback'
   id:
@@ -179,6 +190,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/suggestions'
+    | '/hooks/sync-github'
     | '/invite/$token'
     | '/api/zoho/callback'
   fileRoutesById: FileRoutesById
@@ -195,6 +207,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRoute
   SuggestionsRoute: typeof SuggestionsRoute
+  HooksSyncGithubRoute: typeof HooksSyncGithubRoute
   InviteTokenRoute: typeof InviteTokenRoute
   ApiZohoCallbackRoute: typeof ApiZohoCallbackRoute
 }
@@ -285,6 +298,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/hooks/sync-github': {
+      id: '/hooks/sync-github'
+      path: '/hooks/sync-github'
+      fullPath: '/hooks/sync-github'
+      preLoaderRoute: typeof HooksSyncGithubRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/zoho/callback': {
       id: '/api/zoho/callback'
       path: '/api/zoho/callback'
@@ -307,6 +327,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRoute,
   SuggestionsRoute: SuggestionsRoute,
+  HooksSyncGithubRoute: HooksSyncGithubRoute,
   InviteTokenRoute: InviteTokenRoute,
   ApiZohoCallbackRoute: ApiZohoCallbackRoute,
 }
