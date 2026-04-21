@@ -260,6 +260,54 @@ export type Database = {
         }
         Relationships: []
       }
+      cli_schedules: {
+        Row: {
+          agent_slug: string
+          created_at: string
+          cron: string
+          enabled: boolean
+          id: string
+          last_output: string | null
+          last_run_at: string | null
+          last_status: string | null
+          model: string | null
+          name: string
+          prompt: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_slug?: string
+          created_at?: string
+          cron: string
+          enabled?: boolean
+          id?: string
+          last_output?: string | null
+          last_run_at?: string | null
+          last_status?: string | null
+          model?: string | null
+          name: string
+          prompt: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_slug?: string
+          created_at?: string
+          cron?: string
+          enabled?: boolean
+          id?: string
+          last_output?: string | null
+          last_run_at?: string | null
+          last_status?: string | null
+          model?: string | null
+          name?: string
+          prompt?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cli_tokens: {
         Row: {
           created_at: string
