@@ -39,6 +39,7 @@ function Projects() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
   const [filter, setFilter] = useState("");
+  const [activeOrg, setActiveOrg] = useState<string | null>(null);
   const [editing, setEditing] = useState<P | null>(null);
   const [editForm, setEditForm] = useState({ name: "", status: "active", priority: 3, notes: "" });
 
@@ -106,12 +107,27 @@ function Projects() {
     }
   };
 
-  const filtered = items.filter((p) =>
-    !filter ||
-    p.name.toLowerCase().includes(filter.toLowerCase()) ||
-    (p.description ?? "").toLowerCase().includes(filter.toLowerCase()) ||
-    p.tags.some((t) => t.toLowerCase().includes(filter.toLowerCase())),
-  );
+  // Distinct orgs from tags like "org:acme-co"
+  const orgs = Array.from(
+    new Set(
+      items.flatMap((p) =>
+        (p.tags ?? [])
+          .filter((t) => t.startsWith(ORG_PREFIX))
+          .map((t) => t.slice(ORG_PREFIX.length)),
+      ),
+    ),
+  ).sort();
+
+  const filtered = items.filter((p) => {
+    const matchesText =
+      !filter ||
+      p.name.toLowerCase().includes(filter.toLowerCase()) ||
+      (p.description ?? "").toLowerCase().includes(filter.toLowerCase()) ||
+      p.tags.some((t) => t.toLowerCase().includes(filter.toLowerCase()));
+    const matchesOrg =
+      !activeOrg || (p.tags ?? []).includes(`${ORG_PREFIX}${activeOrg}`);
+    return matchesText && matchesOrg;
+  });
 
   return (
     <div className="p-8 max-w-6xl">
