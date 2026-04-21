@@ -4,15 +4,17 @@
  *
  * For each due schedule we call the same logic as `agent/run` (non-streaming) and
  * persist the output back onto the schedule row so the user can see history.
+ * On failure, the operator is notified via Resend (rate-limited to once per
+ * 30 minutes per schedule to prevent flooding).
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { callBrain, type BrainMessage } from "@/lib/brain.server";
 import { executeTool, TOOL_SCHEMAS, type ToolName } from "@/lib/zoho-tools.server";
+import { sendNotifyEmail } from "@/lib/email-notify.server";
 
-// Tiny cron matcher (5-field: m h dom mon dow). Supports: numbers, asterisk,
-// step (asterisk-slash-N), lists (1,2,3), ranges (1-5). Good enough for
-// personal CLI scheduling; not feature-complete vs vixie-cron.
+const ERROR_EMAIL_COOLDOWN_MS = 30 * 60 * 1000; // 30 min
+
 function cronMatches(expr: string, now: Date): boolean {
   const fields = expr.trim().split(/\s+/);
   if (fields.length !== 5) return false;
@@ -39,6 +41,10 @@ function matchField(field: string, value: number): boolean {
     const n = parseInt(body, 10);
     return Number.isFinite(n) && value === n;
   });
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 }
 
 export const Route = createFileRoute("/hooks/run-cli-schedules")({
@@ -110,11 +116,34 @@ export const Route = createFileRoute("/hooks/run-cli-schedules")({
               .eq("id", s.id);
             results.push({ id: s.id, name: s.name, ok: true });
           } catch (e: any) {
+            const msg = e?.message ?? String(e);
             await supabaseAdmin
               .from("cli_schedules")
-              .update({ last_run_at: now.toISOString(), last_status: "error", last_output: e?.message ?? "error" })
+              .update({ last_run_at: now.toISOString(), last_status: "error", last_output: msg })
               .eq("id", s.id);
-            results.push({ id: s.id, name: s.name, ok: false, error: e?.message });
+
+            // Email on failure (rate-limited per schedule)
+            if (s.notify_email) {
+              const lastEmailedAt = s.last_error_emailed_at ? new Date(s.last_error_emailed_at).getTime() : 0;
+              if (Date.now() - lastEmailedAt > ERROR_EMAIL_COOLDOWN_MS) {
+                const r = await sendNotifyEmail({
+                  to: s.notify_email,
+                  subject: `[Merkabah] Schedule failed: ${s.name}`,
+                  html: `<h2>Scheduled run failed</h2>
+                    <p><strong>${s.name}</strong></p>
+                    <p style="font-family:monospace;background:#f5f5f5;padding:8px;border-radius:4px">${escapeHtml(msg)}</p>
+                    <p style="color:#666;font-size:12px">Cron: <code>${s.cron}</code> · Agent: ${s.agent_slug} · ${now.toISOString()}</p>
+                    <p style="color:#666;font-size:11px">You won't get another email about this schedule for 30 minutes.</p>`,
+                });
+                if (r.ok) {
+                  await supabaseAdmin
+                    .from("cli_schedules")
+                    .update({ last_error_emailed_at: new Date().toISOString() })
+                    .eq("id", s.id);
+                }
+              }
+            }
+            results.push({ id: s.id, name: s.name, ok: false, error: msg });
           }
         }
 
