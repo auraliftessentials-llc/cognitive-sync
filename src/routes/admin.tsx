@@ -1148,7 +1148,7 @@ function AdminPage() {
                         >
                           <div className="flex items-center justify-between gap-2 mb-1">
                             <div className="text-sm font-medium truncate">
-                              {l.Full_Name ?? `${l.First_Name ?? ""} ${l.Last_Name ?? ""}`.trim() || "—"}
+                              {l.Full_Name ?? (`${l.First_Name ?? ""} ${l.Last_Name ?? ""}`.trim() || "—")}
                             </div>
                             {l.Lead_Status && (
                               <Badge variant="outline" className="text-[10px] shrink-0">
