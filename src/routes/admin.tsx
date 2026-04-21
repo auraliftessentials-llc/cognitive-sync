@@ -180,6 +180,20 @@ function AdminPage() {
   // Workspaces
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
 
+  // Zoho
+  const [zohoConn, setZohoConn] = useState<{
+    email: string;
+    scopes: string[];
+    expires_at: string;
+    created_at: string;
+    updated_at: string;
+  } | null>(null);
+  const [zohoLoading, setZohoLoading] = useState(false);
+  const [zohoMail, setZohoMail] = useState<any[]>([]);
+  const [zohoLeads, setZohoLeads] = useState<any[]>([]);
+  const [zohoMailLoading, setZohoMailLoading] = useState(false);
+  const [zohoLeadsLoading, setZohoLeadsLoading] = useState(false);
+
   useEffect(() => {
     if (!loading && !user) nav({ to: "/auth" });
     else if (!loading && user && !isSuperAdmin) nav({ to: "/dashboard" });
