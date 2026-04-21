@@ -37,6 +37,11 @@ import {
   ToggleLeft,
   BarChart3,
   Building2,
+  Mail,
+  Plug,
+  Inbox,
+  UserCheck,
+  Unplug,
 } from "lucide-react";
 import {
   getAdminOverview,
@@ -51,6 +56,13 @@ import {
   setFeatureFlag,
 } from "@/lib/fleet.functions";
 import { listMyWorkspaces } from "@/lib/workspace.functions";
+import {
+  getZohoAuthUrl,
+  getZohoStatus,
+  disconnectZoho,
+  getZohoMail,
+  getZohoCrmLeads,
+} from "@/lib/zoho.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -168,6 +180,20 @@ function AdminPage() {
   // Workspaces
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
 
+  // Zoho
+  const [zohoConn, setZohoConn] = useState<{
+    email: string;
+    scopes: string[];
+    expires_at: string;
+    created_at: string;
+    updated_at: string;
+  } | null>(null);
+  const [zohoLoading, setZohoLoading] = useState(false);
+  const [zohoMail, setZohoMail] = useState<any[]>([]);
+  const [zohoLeads, setZohoLeads] = useState<any[]>([]);
+  const [zohoMailLoading, setZohoMailLoading] = useState(false);
+  const [zohoLeadsLoading, setZohoLeadsLoading] = useState(false);
+
   useEffect(() => {
     if (!loading && !user) nav({ to: "/auth" });
     else if (!loading && user && !isSuperAdmin) nav({ to: "/dashboard" });
@@ -227,6 +253,67 @@ function AdminPage() {
     }
   };
 
+  const loadZohoStatus = async () => {
+    try {
+      const res = await getZohoStatus();
+      setZohoConn(res.connection);
+    } catch {
+      /* silent — likely no connection yet */
+    }
+  };
+
+  const connectZoho = async () => {
+    setZohoLoading(true);
+    try {
+      const res = await getZohoAuthUrl();
+      if (!res.configured) {
+        toast.error("Zoho not configured. Set ZOHO_CLIENT_ID and ZOHO_CLIENT_SECRET.");
+        return;
+      }
+      window.location.href = res.url;
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to start Zoho OAuth");
+    } finally {
+      setZohoLoading(false);
+    }
+  };
+
+  const handleDisconnectZoho = async () => {
+    try {
+      await disconnectZoho();
+      setZohoConn(null);
+      setZohoMail([]);
+      setZohoLeads([]);
+      toast.success("Zoho disconnected");
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const loadZohoMail = async () => {
+    setZohoMailLoading(true);
+    try {
+      const res = await getZohoMail();
+      setZohoMail(res.messages ?? []);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to load mail");
+    } finally {
+      setZohoMailLoading(false);
+    }
+  };
+
+  const loadZohoLeads = async () => {
+    setZohoLeadsLoading(true);
+    try {
+      const res = await getZohoCrmLeads();
+      setZohoLeads(res.leads ?? []);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to load CRM leads");
+    } finally {
+      setZohoLeadsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!isSuperAdmin) return;
     loadOverview();
@@ -234,6 +321,12 @@ function AdminPage() {
     loadAudit();
     loadFlags();
     loadWorkspaces();
+    loadZohoStatus();
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("connected") === "1") {
+      toast.success("Zoho connected!");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuperAdmin]);
 
@@ -391,7 +484,7 @@ function AdminPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full max-w-3xl">
+          <TabsList className="grid grid-cols-3 md:grid-cols-7 w-full max-w-4xl">
             <TabsTrigger value="overview"><Users className="h-3.5 w-3.5 mr-1.5" />Overview</TabsTrigger>
             <TabsTrigger value="members"><Building2 className="h-3.5 w-3.5 mr-1.5" />Members</TabsTrigger>
             <TabsTrigger value="charts"><BarChart3 className="h-3.5 w-3.5 mr-1.5" />Charts</TabsTrigger>
@@ -405,6 +498,7 @@ function AdminPage() {
               )}
             </TabsTrigger>
             <TabsTrigger value="flags"><ToggleLeft className="h-3.5 w-3.5 mr-1.5" />Flags</TabsTrigger>
+            <TabsTrigger value="zoho"><Mail className="h-3.5 w-3.5 mr-1.5" />Zoho</TabsTrigger>
           </TabsList>
 
           {/* OVERVIEW */}
@@ -905,6 +999,176 @@ function AdminPage() {
                 </Card>
               )}
             </div>
+          </TabsContent>
+
+          {/* ZOHO */}
+          <TabsContent value="zoho" className="mt-6 space-y-6">
+            <Card className="p-6 border-primary/30">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="flex items-start gap-3">
+                  <div className="h-12 w-12 rounded-md bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center">
+                    <Plug className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-xl tracking-wider">ZOHO CONNECTION</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Mail · CRM · Accounts. One OAuth login covers all your Zoho-authenticated emails.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {zohoConn ? (
+                    <>
+                      <Button variant="outline" size="sm" onClick={loadZohoStatus}>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Refresh
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={handleDisconnectZoho}>
+                        <Unplug className="h-4 w-4 mr-2" />
+                        Disconnect
+                      </Button>
+                    </>
+                  ) : (
+                    <Button size="sm" onClick={connectZoho} disabled={zohoLoading}>
+                      <Plug className="h-4 w-4 mr-2" />
+                      {zohoLoading ? "Connecting…" : "Connect Zoho"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {zohoConn ? (
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-3 rounded-md border border-border/60 bg-muted/10">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                      Connected as
+                    </div>
+                    <div className="font-mono text-sm flex items-center gap-2">
+                      <UserCheck className="h-3.5 w-3.5 text-primary" />
+                      {zohoConn.email}
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-md border border-border/60 bg-muted/10">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                      Token expires
+                    </div>
+                    <div className="font-mono text-sm">
+                      {new Date(zohoConn.expires_at).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-md border border-border/60 bg-muted/10">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                      Scopes
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {zohoConn.scopes.map((s) => (
+                        <Badge key={s} variant="outline" className="text-[10px] font-mono">
+                          {s.split(".").slice(-2).join(".")}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-6 p-4 rounded-md border border-dashed border-border/60 bg-muted/5 text-sm text-muted-foreground">
+                  Click <span className="text-foreground font-medium">Connect Zoho</span> to authorize.
+                  After Zoho login, all of your Zoho-managed emails (e.g. ryanpuddy@profireaper.com) will
+                  flow through this connection.
+                </div>
+              )}
+            </Card>
+
+            {zohoConn && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Mail */}
+                <Card className="p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Inbox className="h-4 w-4 text-primary" />
+                      <h3 className="font-display tracking-wider text-sm">RECENT MAIL</h3>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={loadZohoMail} disabled={zohoMailLoading}>
+                      <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${zohoMailLoading ? "animate-spin" : ""}`} />
+                      Load
+                    </Button>
+                  </div>
+                  <div className="space-y-2 max-h-[480px] overflow-y-auto">
+                    {zohoMail.length === 0 ? (
+                      <div className="text-xs text-muted-foreground py-8 text-center">
+                        {zohoMailLoading ? "Loading…" : "Click Load to fetch recent messages."}
+                      </div>
+                    ) : (
+                      zohoMail.map((m: any, i: number) => (
+                        <div
+                          key={m.messageId ?? i}
+                          className="p-3 rounded-md border border-border/40 bg-muted/5 hover:bg-muted/10 transition-colors"
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <div className="font-mono text-xs text-primary truncate">
+                              {m.fromAddress ?? m.sender ?? "—"}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                              {m.receivedTime
+                                ? new Date(Number(m.receivedTime)).toLocaleDateString()
+                                : ""}
+                            </div>
+                          </div>
+                          <div className="text-sm font-medium truncate">{m.subject ?? "(no subject)"}</div>
+                          <div className="text-xs text-muted-foreground truncate mt-0.5">
+                            {m.summary ?? ""}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </Card>
+
+                {/* CRM Leads */}
+                <Card className="p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      <h3 className="font-display tracking-wider text-sm">CRM LEADS</h3>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={loadZohoLeads} disabled={zohoLeadsLoading}>
+                      <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${zohoLeadsLoading ? "animate-spin" : ""}`} />
+                      Load
+                    </Button>
+                  </div>
+                  <div className="space-y-2 max-h-[480px] overflow-y-auto">
+                    {zohoLeads.length === 0 ? (
+                      <div className="text-xs text-muted-foreground py-8 text-center">
+                        {zohoLeadsLoading ? "Loading…" : "Click Load to fetch recent leads."}
+                      </div>
+                    ) : (
+                      zohoLeads.map((l: any) => (
+                        <div
+                          key={l.id}
+                          className="p-3 rounded-md border border-border/40 bg-muted/5 hover:bg-muted/10 transition-colors"
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <div className="text-sm font-medium truncate">
+                              {l.Full_Name ?? (`${l.First_Name ?? ""} ${l.Last_Name ?? ""}`.trim() || "—")}
+                            </div>
+                            {l.Lead_Status && (
+                              <Badge variant="outline" className="text-[10px] shrink-0">
+                                {l.Lead_Status}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground font-mono truncate">
+                            {l.Email ?? ""}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            {l.Company ?? ""}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </Card>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
