@@ -45,6 +45,7 @@ import {
   Terminal,
 } from "lucide-react";
 import { CliTokensPanel } from "@/components/CliTokensPanel";
+import { SchedulesPanel } from "@/components/SchedulesPanel";
 import {
   getAdminOverview,
   setUserRole,
@@ -1175,8 +1176,9 @@ function AdminPage() {
           </TabsContent>
 
           {/* CLI */}
-          <TabsContent value="cli" className="mt-6">
+          <TabsContent value="cli" className="mt-6 space-y-6">
             <CliTokensPanel />
+            <SchedulesPanel />
           </TabsContent>
         </Tabs>
       </div>
