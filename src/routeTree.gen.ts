@@ -23,6 +23,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as HooksSyncGithubRouteImport } from './routes/hooks/sync-github'
 import { Route as ApiZohoCallbackRouteImport } from './routes/api/zoho.callback'
+import { Route as ApiCliSplatRouteImport } from './routes/api/cli.$'
 
 const SuggestionsRoute = SuggestionsRouteImport.update({
   id: '/suggestions',
@@ -94,6 +95,11 @@ const ApiZohoCallbackRoute = ApiZohoCallbackRouteImport.update({
   path: '/api/zoho/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCliSplatRoute = ApiCliSplatRouteImport.update({
+  id: '/api/cli/$',
+  path: '/api/cli/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/suggestions': typeof SuggestionsRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/api/cli/$': typeof ApiCliSplatRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
 }
 export interface FileRoutesByTo {
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/suggestions': typeof SuggestionsRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/api/cli/$': typeof ApiCliSplatRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
 }
 export interface FileRoutesById {
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/suggestions': typeof SuggestionsRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/api/cli/$': typeof ApiCliSplatRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
 }
 export interface FileRouteTypes {
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/suggestions'
     | '/hooks/sync-github'
     | '/invite/$token'
+    | '/api/cli/$'
     | '/api/zoho/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -176,6 +186,7 @@ export interface FileRouteTypes {
     | '/suggestions'
     | '/hooks/sync-github'
     | '/invite/$token'
+    | '/api/cli/$'
     | '/api/zoho/callback'
   id:
     | '__root__'
@@ -192,6 +203,7 @@ export interface FileRouteTypes {
     | '/suggestions'
     | '/hooks/sync-github'
     | '/invite/$token'
+    | '/api/cli/$'
     | '/api/zoho/callback'
   fileRoutesById: FileRoutesById
 }
@@ -209,6 +221,7 @@ export interface RootRouteChildren {
   SuggestionsRoute: typeof SuggestionsRoute
   HooksSyncGithubRoute: typeof HooksSyncGithubRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  ApiCliSplatRoute: typeof ApiCliSplatRoute
   ApiZohoCallbackRoute: typeof ApiZohoCallbackRoute
 }
 
@@ -312,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiZohoCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cli/$': {
+      id: '/api/cli/$'
+      path: '/api/cli/$'
+      fullPath: '/api/cli/$'
+      preLoaderRoute: typeof ApiCliSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -329,6 +349,7 @@ const rootRouteChildren: RootRouteChildren = {
   SuggestionsRoute: SuggestionsRoute,
   HooksSyncGithubRoute: HooksSyncGithubRoute,
   InviteTokenRoute: InviteTokenRoute,
+  ApiCliSplatRoute: ApiCliSplatRoute,
   ApiZohoCallbackRoute: ApiZohoCallbackRoute,
 }
 export const routeTree = rootRouteImport

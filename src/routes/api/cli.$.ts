@@ -134,7 +134,7 @@ const ROUTES: Record<string, Handler> = {
           tools: TOOL_SCHEMAS as any,
           tool_choice: "auto",
           preferredModel: preferred,
-          reasoning_effort: agent.reasoning_effort ?? "medium",
+          reasoning_effort: (agent.reasoning_effort ?? "medium") as any,
         });
         const choice = resp.message;
         if (choice.tool_calls?.length) {
@@ -188,10 +188,9 @@ const ROUTES: Record<string, Handler> = {
       "workspaces", "workspace_members", "feature_flags", "brain_health",
     ]);
     if (!ALLOWED.has(table)) return jsonResponse({ error: `Table not allowed: ${table}` }, { status: 400 });
-    let q = supabaseAdmin.from(table).select(select).limit(limit);
-    // Safety: every query must be scoped to the principal's user_id when the
-    // table has that column (all our user data tables do). audit_log keys on
-    // actor_id, brain_health/feature_flags are global.
+    // Dynamic table name — typings can't narrow, so we go through `any` and
+    // enforce the user_id boundary in code below.
+    let q: any = (supabaseAdmin as any).from(table).select(select).limit(limit);
     const userScoped = ["projects","suggestions","agent_runs","agent_tool_calls","agents","conversations","messages"];
     if (userScoped.includes(table)) q = q.eq("user_id", p.userId);
     if (table === "audit_log") q = q.eq("actor_id", p.userId);
@@ -209,7 +208,7 @@ const ROUTES: Record<string, Handler> = {
     const ALLOWED = new Set(["projects", "suggestions", "conversations", "messages"]);
     if (!ALLOWED.has(table)) return jsonResponse({ error: `Insert not allowed for ${table}` }, { status: 400 });
     const toInsert = { ...row, user_id: p.userId };
-    const { data, error } = await supabaseAdmin.from(table).insert(toInsert).select().single();
+    const { data, error } = await (supabaseAdmin as any).from(table).insert(toInsert).select().single();
     if (error) return jsonResponse({ error: error.message }, { status: 500 });
     return jsonResponse({ ok: true, row: data });
   },
