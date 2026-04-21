@@ -166,7 +166,8 @@ function TerminalScreen() {
         }
       }
     } catch (e: any) {
-      push({ kind: "error", text: e?.message ?? "stream failed" });
+      const msg = e?.message ?? String(e ?? "stream failed");
+      push({ kind: "error", text: `stream failed: ${msg}. Check that at least one of XAI_API_KEY / OPENAI_API_KEY / LOVABLE_API_KEY is configured.` });
     } finally {
       setBusy(false);
     }
