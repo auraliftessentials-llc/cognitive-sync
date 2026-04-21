@@ -22,7 +22,9 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as HooksSyncGithubRouteImport } from './routes/hooks/sync-github'
+import { Route as HooksRunCliSchedulesRouteImport } from './routes/hooks/run-cli-schedules'
 import { Route as ApiZohoCallbackRouteImport } from './routes/api/zoho.callback'
+import { Route as ApiCliStreamRouteImport } from './routes/api/cli.stream'
 import { Route as ApiCliSplatRouteImport } from './routes/api/cli.$'
 
 const SuggestionsRoute = SuggestionsRouteImport.update({
@@ -90,9 +92,19 @@ const HooksSyncGithubRoute = HooksSyncGithubRouteImport.update({
   path: '/hooks/sync-github',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HooksRunCliSchedulesRoute = HooksRunCliSchedulesRouteImport.update({
+  id: '/hooks/run-cli-schedules',
+  path: '/hooks/run-cli-schedules',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiZohoCallbackRoute = ApiZohoCallbackRouteImport.update({
   id: '/api/zoho/callback',
   path: '/api/zoho/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCliStreamRoute = ApiCliStreamRouteImport.update({
+  id: '/api/cli/stream',
+  path: '/api/cli/stream',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCliSplatRoute = ApiCliSplatRouteImport.update({
@@ -113,9 +125,11 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/suggestions': typeof SuggestionsRoute
+  '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
   '/api/cli/$': typeof ApiCliSplatRoute
+  '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
 }
 export interface FileRoutesByTo {
@@ -130,9 +144,11 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/suggestions': typeof SuggestionsRoute
+  '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
   '/api/cli/$': typeof ApiCliSplatRoute
+  '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
 }
 export interface FileRoutesById {
@@ -148,9 +164,11 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/suggestions': typeof SuggestionsRoute
+  '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
   '/api/cli/$': typeof ApiCliSplatRoute
+  '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
 }
 export interface FileRouteTypes {
@@ -167,9 +185,11 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/suggestions'
+    | '/hooks/run-cli-schedules'
     | '/hooks/sync-github'
     | '/invite/$token'
     | '/api/cli/$'
+    | '/api/cli/stream'
     | '/api/zoho/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -184,9 +204,11 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/suggestions'
+    | '/hooks/run-cli-schedules'
     | '/hooks/sync-github'
     | '/invite/$token'
     | '/api/cli/$'
+    | '/api/cli/stream'
     | '/api/zoho/callback'
   id:
     | '__root__'
@@ -201,9 +223,11 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/suggestions'
+    | '/hooks/run-cli-schedules'
     | '/hooks/sync-github'
     | '/invite/$token'
     | '/api/cli/$'
+    | '/api/cli/stream'
     | '/api/zoho/callback'
   fileRoutesById: FileRoutesById
 }
@@ -219,9 +243,11 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRoute
   SuggestionsRoute: typeof SuggestionsRoute
+  HooksRunCliSchedulesRoute: typeof HooksRunCliSchedulesRoute
   HooksSyncGithubRoute: typeof HooksSyncGithubRoute
   InviteTokenRoute: typeof InviteTokenRoute
   ApiCliSplatRoute: typeof ApiCliSplatRoute
+  ApiCliStreamRoute: typeof ApiCliStreamRoute
   ApiZohoCallbackRoute: typeof ApiZohoCallbackRoute
 }
 
@@ -318,11 +344,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HooksSyncGithubRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/hooks/run-cli-schedules': {
+      id: '/hooks/run-cli-schedules'
+      path: '/hooks/run-cli-schedules'
+      fullPath: '/hooks/run-cli-schedules'
+      preLoaderRoute: typeof HooksRunCliSchedulesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/zoho/callback': {
       id: '/api/zoho/callback'
       path: '/api/zoho/callback'
       fullPath: '/api/zoho/callback'
       preLoaderRoute: typeof ApiZohoCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cli/stream': {
+      id: '/api/cli/stream'
+      path: '/api/cli/stream'
+      fullPath: '/api/cli/stream'
+      preLoaderRoute: typeof ApiCliStreamRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/cli/$': {
@@ -347,20 +387,13 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRoute,
   SuggestionsRoute: SuggestionsRoute,
+  HooksRunCliSchedulesRoute: HooksRunCliSchedulesRoute,
   HooksSyncGithubRoute: HooksSyncGithubRoute,
   InviteTokenRoute: InviteTokenRoute,
   ApiCliSplatRoute: ApiCliSplatRoute,
+  ApiCliStreamRoute: ApiCliStreamRoute,
   ApiZohoCallbackRoute: ApiZohoCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
