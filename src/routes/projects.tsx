@@ -26,6 +26,8 @@ type P = {
   tech_stack: string[]; tags: string[]; notes: string | null; priority: number;
 };
 
+const ORG_PREFIX = "org:";
+
 const empty = {
   name: "", description: "", status: "active", repo_url: "", live_url: "",
   tech_stack: "", tags: "", notes: "", priority: 3,
