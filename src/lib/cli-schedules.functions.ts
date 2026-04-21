@@ -5,9 +5,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { callBrain, type BrainMessage } from "@/lib/brain.server";
-import { executeTool, TOOL_SCHEMAS, type ToolName } from "@/lib/zoho-tools.server";
-import { sendNotifyEmail } from "@/lib/email-notify.server";
+import { runScheduleOnce } from "@/lib/schedule-runner.server";
 
 export type CliSchedule = {
   id: string;
