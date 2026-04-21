@@ -10,10 +10,9 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { callBrain, type BrainMessage } from "@/lib/brain.server";
 import { executeTool, TOOL_SCHEMAS, type ToolName } from "@/lib/zoho-tools.server";
 
-/**
- * Tiny cron matcher (5-field: m h dom mon dow). Supports: numbers, *, */N, lists (1,2,3), ranges (1-5).
- * Good enough for personal CLI scheduling; not feature-complete vs vixie-cron.
- */
+// Tiny cron matcher (5-field: m h dom mon dow). Supports: numbers, asterisk,
+// step (asterisk-slash-N), lists (1,2,3), ranges (1-5). Good enough for
+// personal CLI scheduling; not feature-complete vs vixie-cron.
 function cronMatches(expr: string, now: Date): boolean {
   const fields = expr.trim().split(/\s+/);
   if (fields.length !== 5) return false;
