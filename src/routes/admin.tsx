@@ -37,6 +37,11 @@ import {
   ToggleLeft,
   BarChart3,
   Building2,
+  Mail,
+  Plug,
+  Inbox,
+  UserCheck,
+  Unplug,
 } from "lucide-react";
 import {
   getAdminOverview,
@@ -51,6 +56,13 @@ import {
   setFeatureFlag,
 } from "@/lib/fleet.functions";
 import { listMyWorkspaces } from "@/lib/workspace.functions";
+import {
+  getZohoAuthUrl,
+  getZohoStatus,
+  disconnectZoho,
+  getZohoMail,
+  getZohoCrmLeads,
+} from "@/lib/zoho.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -391,7 +403,7 @@ function AdminPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full max-w-3xl">
+          <TabsList className="grid grid-cols-3 md:grid-cols-7 w-full max-w-4xl">
             <TabsTrigger value="overview"><Users className="h-3.5 w-3.5 mr-1.5" />Overview</TabsTrigger>
             <TabsTrigger value="members"><Building2 className="h-3.5 w-3.5 mr-1.5" />Members</TabsTrigger>
             <TabsTrigger value="charts"><BarChart3 className="h-3.5 w-3.5 mr-1.5" />Charts</TabsTrigger>
@@ -405,6 +417,7 @@ function AdminPage() {
               )}
             </TabsTrigger>
             <TabsTrigger value="flags"><ToggleLeft className="h-3.5 w-3.5 mr-1.5" />Flags</TabsTrigger>
+            <TabsTrigger value="zoho"><Mail className="h-3.5 w-3.5 mr-1.5" />Zoho</TabsTrigger>
           </TabsList>
 
           {/* OVERVIEW */}
