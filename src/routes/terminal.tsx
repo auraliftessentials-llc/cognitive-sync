@@ -7,7 +7,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
-import { listCliTokens, mintCliToken } from "@/lib/cli-tokens.functions";
+import { listCliTokens, createCliToken } from "@/lib/cli-tokens.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -60,12 +60,12 @@ function TerminalScreen() {
     setBusy(true);
     try {
       const list = await listCliTokens();
-      const existing = list.tokens.find((t) => t.name === "Web Terminal");
+      const existing = (list.tokens as any[]).find((t: any) => t.name === "Web Terminal");
       if (existing) {
-        toast.error("A 'Web Terminal' token already exists. Paste it manually or delete it from Admin → CLI.");
+        toast.error("A 'Web Terminal' token already exists. Delete it from Admin → CLI first, or paste an existing token.");
         return;
       }
-      const minted = await mintCliToken({ data: { name: "Web Terminal", scopes: ["read", "agent", "tools"] } });
+      const minted: any = await createCliToken({ data: { name: "Web Terminal", scopes: ["read", "agent", "tools"] } });
       localStorage.setItem(TOKEN_KEY, minted.token);
       setToken(minted.token); setHasToken(true);
       toast.success("Token provisioned and saved to this browser.");
