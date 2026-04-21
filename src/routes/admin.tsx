@@ -1173,6 +1173,11 @@ function AdminPage() {
               </div>
             )}
           </TabsContent>
+
+          {/* CLI */}
+          <TabsContent value="cli" className="mt-6">
+            <CliTokensPanel />
+          </TabsContent>
         </Tabs>
       </div>
 
