@@ -399,7 +399,15 @@ async function callProvider(
  * Throws only if EVERY provider in the chain fails.
  */
 export async function callBrain(opts: CallOptions): Promise<BrainResponse> {
-  const chain = resolveChain(opts.preferredModel, opts.taskKind).filter((id) => !opts.exclude?.includes(id));
+  let chain = resolveChain(opts.preferredModel, opts.taskKind).filter((id) => !opts.exclude?.includes(id));
+  // If the caller is doing tool-calling, restrict to OpenAI-wire providers.
+  // Anthropic/Gemini direct adapters here normalize replies to plain text and
+  // would silently strip `tool_calls`, breaking multi-round agent loops
+  // (this was the CEO Grok "agent stops mid-task" bug on fallback).
+  if (opts.tools?.length) {
+    const openaiOnly = chain.filter((id) => PROVIDERS[id].wireFormat === "openai");
+    if (openaiOnly.length) chain = openaiOnly;
+  }
   const fallbacks: { provider: ProviderId; status: number; error: string }[] = [];
 
   for (const id of chain) {
