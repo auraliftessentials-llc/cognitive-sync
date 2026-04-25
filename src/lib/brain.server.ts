@@ -32,6 +32,18 @@ export type BrainMessage = {
 
 export type ProviderId = "xai" | "openai-direct" | "lovable-openai" | "lovable-google";
 
+/**
+ * Task kinds — used to pick the best provider for a given job.
+ *  - reasoning: deep multi-step analysis, math, code review (GPT-5 / Grok strong)
+ *  - code:      code generation / refactors (GPT-5 best, Grok solid, Gemini ok)
+ *  - chat:      open-ended conversation (any work, prefer cheaper/faster)
+ *  - fast:      latency-sensitive small responses (Gemini Flash wins)
+ *  - tools:     function-calling / agent loops (GPT-5 most reliable, then xAI)
+ *  - vision:    image input (Gemini and GPT-5 only)
+ *  - cheap:     bulk / classification / summarisation (Gemini Flash)
+ */
+export type TaskKind = "reasoning" | "code" | "chat" | "fast" | "tools" | "vision" | "cheap";
+
 export type BrainProvider = {
   id: ProviderId;
   label: string;
@@ -40,6 +52,8 @@ export type BrainProvider = {
   apiKeyEnv: string;
   modelOnWire: string;      // model string actually sent to the provider
   supportsTools: boolean;
+  /** Lower number = stronger fit for that task. Missing = not preferred. */
+  strengths: Partial<Record<TaskKind, number>>;
 };
 
 export const PROVIDERS: Record<ProviderId, BrainProvider> = {
@@ -51,6 +65,8 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
     apiKeyEnv: "XAI_API_KEY",
     modelOnWire: "grok-4",
     supportsTools: true,
+    // Grok is strong at reasoning + chat, decent at tools, weak at vision/cheap.
+    strengths: { reasoning: 2, chat: 2, tools: 3, code: 3 },
   },
   "openai-direct": {
     id: "openai-direct",
@@ -60,6 +76,8 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
     apiKeyEnv: "OPENAI_API_KEY",
     modelOnWire: "gpt-5",
     supportsTools: true,
+    // GPT-5 is best-in-class for reasoning, code, tool-use, and vision.
+    strengths: { reasoning: 1, code: 1, tools: 1, vision: 2, chat: 2 },
   },
   "lovable-openai": {
     id: "lovable-openai",
@@ -69,6 +87,8 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
     apiKeyEnv: "LOVABLE_API_KEY",
     modelOnWire: "openai/gpt-5",
     supportsTools: true,
+    // Same model as direct, slightly higher latency via gateway.
+    strengths: { reasoning: 2, code: 2, tools: 2, vision: 3, chat: 3 },
   },
   "lovable-google": {
     id: "lovable-google",
@@ -78,6 +98,8 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
     apiKeyEnv: "LOVABLE_API_KEY",
     modelOnWire: "google/gemini-3-flash-preview",
     supportsTools: true,
+    // Gemini Flash wins on speed, cost, and bulk classification.
+    strengths: { fast: 1, cheap: 1, vision: 1, chat: 3, code: 4 },
   },
 };
 
@@ -104,15 +126,33 @@ export type ProviderHealth = {
 };
 
 /**
- * Resolve which provider to TRY first based on a model hint.
- * If the operator picked x-ai/grok-4 explicitly we honour that, but fallback
- * still flows through the rest of the chain on failure.
+ * Resolve which providers to try, in priority order.
+ *
+ * Priority:
+ *   1. If `preferredModel` is set AND its provider is configured → that first.
+ *   2. Otherwise, if `taskKind` is set → providers ranked by their strength
+ *      score for that task (lower = better), then alphabetical for ties.
+ *   3. Otherwise → DEFAULT_FALLBACK_CHAIN.
+ *
+ * Whatever the head of the chain is, the rest of DEFAULT_FALLBACK_CHAIN is
+ * appended so we always have automatic failover.
  */
-export function resolveChain(preferredModel?: string): ProviderId[] {
-  if (!preferredModel) return DEFAULT_FALLBACK_CHAIN;
-  const direct = Object.values(PROVIDERS).find((p) => p.model === preferredModel)?.id;
-  if (!direct) return DEFAULT_FALLBACK_CHAIN;
-  return [direct, ...DEFAULT_FALLBACK_CHAIN.filter((id) => id !== direct)];
+export function resolveChain(preferredModel?: string, taskKind?: TaskKind): ProviderId[] {
+  if (preferredModel) {
+    const direct = Object.values(PROVIDERS).find((p) => p.model === preferredModel)?.id;
+    if (direct) return [direct, ...DEFAULT_FALLBACK_CHAIN.filter((id) => id !== direct)];
+  }
+  if (taskKind) {
+    const ranked = Object.values(PROVIDERS)
+      .filter((p) => p.strengths[taskKind] !== undefined)
+      .sort((a, b) => (a.strengths[taskKind]! - b.strengths[taskKind]!) || a.id.localeCompare(b.id))
+      .map((p) => p.id);
+    if (ranked.length > 0) {
+      const tail = DEFAULT_FALLBACK_CHAIN.filter((id) => !ranked.includes(id));
+      return [...ranked, ...tail];
+    }
+  }
+  return DEFAULT_FALLBACK_CHAIN;
 }
 
 type CallOptions = {
@@ -120,6 +160,8 @@ type CallOptions = {
   tools?: any[];
   tool_choice?: "auto" | "none" | { type: "function"; function: { name: string } };
   preferredModel?: string;
+  /** Hint about the kind of work — used to pick the best provider first. */
+  taskKind?: TaskKind;
   reasoning_effort?: "minimal" | "low" | "medium" | "high" | "xhigh" | "none";
   /** Skip these providers (e.g. already-failed in a previous round). */
   exclude?: ProviderId[];
@@ -239,7 +281,7 @@ async function callProvider(
  * Throws only if EVERY provider in the chain fails.
  */
 export async function callBrain(opts: CallOptions): Promise<BrainResponse> {
-  const chain = resolveChain(opts.preferredModel).filter((id) => !opts.exclude?.includes(id));
+  const chain = resolveChain(opts.preferredModel, opts.taskKind).filter((id) => !opts.exclude?.includes(id));
   const fallbacks: { provider: ProviderId; status: number; error: string }[] = [];
 
   for (const id of chain) {
