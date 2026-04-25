@@ -21,6 +21,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsAuthRouteImport } from './routes/settings.auth'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as HooksSyncGithubRouteImport } from './routes/hooks/sync-github'
 import { Route as HooksRunCliSchedulesRouteImport } from './routes/hooks/run-cli-schedules'
@@ -88,6 +89,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsAuthRoute = SettingsAuthRouteImport.update({
+  id: '/settings/auth',
+  path: '/settings/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InviteTokenRoute = InviteTokenRouteImport.update({
   id: '/invite/$token',
   path: '/invite/$token',
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/settings/auth': typeof SettingsAuthRoute
   '/api/cli/$': typeof ApiCliSplatRoute
   '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/settings/auth': typeof SettingsAuthRoute
   '/api/cli/$': typeof ApiCliSplatRoute
   '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/settings/auth': typeof SettingsAuthRoute
   '/api/cli/$': typeof ApiCliSplatRoute
   '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/hooks/run-cli-schedules'
     | '/hooks/sync-github'
     | '/invite/$token'
+    | '/settings/auth'
     | '/api/cli/$'
     | '/api/cli/stream'
     | '/api/zoho/callback'
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
     | '/hooks/run-cli-schedules'
     | '/hooks/sync-github'
     | '/invite/$token'
+    | '/settings/auth'
     | '/api/cli/$'
     | '/api/cli/stream'
     | '/api/zoho/callback'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/hooks/run-cli-schedules'
     | '/hooks/sync-github'
     | '/invite/$token'
+    | '/settings/auth'
     | '/api/cli/$'
     | '/api/cli/stream'
     | '/api/zoho/callback'
@@ -259,6 +271,7 @@ export interface RootRouteChildren {
   HooksRunCliSchedulesRoute: typeof HooksRunCliSchedulesRoute
   HooksSyncGithubRoute: typeof HooksSyncGithubRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  SettingsAuthRoute: typeof SettingsAuthRoute
   ApiCliSplatRoute: typeof ApiCliSplatRoute
   ApiCliStreamRoute: typeof ApiCliStreamRoute
   ApiZohoCallbackRoute: typeof ApiZohoCallbackRoute
@@ -350,6 +363,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/auth': {
+      id: '/settings/auth'
+      path: '/settings/auth'
+      fullPath: '/settings/auth'
+      preLoaderRoute: typeof SettingsAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/invite/$token': {
       id: '/invite/$token'
       path: '/invite/$token'
@@ -411,6 +431,7 @@ const rootRouteChildren: RootRouteChildren = {
   HooksRunCliSchedulesRoute: HooksRunCliSchedulesRoute,
   HooksSyncGithubRoute: HooksSyncGithubRoute,
   InviteTokenRoute: InviteTokenRoute,
+  SettingsAuthRoute: SettingsAuthRoute,
   ApiCliSplatRoute: ApiCliSplatRoute,
   ApiCliStreamRoute: ApiCliStreamRoute,
   ApiZohoCallbackRoute: ApiZohoCallbackRoute,
@@ -418,3 +439,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

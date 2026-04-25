@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Brain, FolderGit2, MessageSquare, Sparkles, User, LogOut, Github, Crown, Building2, ChevronDown, Bot, Terminal } from "lucide-react";
+import { Brain, FolderGit2, MessageSquare, Sparkles, User, LogOut, Github, Crown, Building2, ChevronDown, Bot, Terminal, ShieldCheck } from "lucide-react";
 import { Merkabah } from "@/components/Merkabah";
 import { useAuth } from "@/lib/auth-context";
 import { useWorkspace } from "@/lib/workspace-context";
@@ -26,6 +26,7 @@ const navItems = [
   { to: "/chat", label: "Brain", icon: MessageSquare },
   { to: "/github", label: "GitHub", icon: Github },
   { to: "/profile", label: "Profile", icon: User },
+  { to: "/settings/auth", label: "Auth", icon: ShieldCheck },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
