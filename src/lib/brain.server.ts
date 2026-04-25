@@ -65,6 +65,8 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
     apiKeyEnv: "XAI_API_KEY",
     modelOnWire: "grok-4",
     supportsTools: true,
+    // Grok is strong at reasoning + chat, decent at tools, weak at vision/cheap.
+    strengths: { reasoning: 2, chat: 2, tools: 3, code: 3 },
   },
   "openai-direct": {
     id: "openai-direct",
@@ -74,6 +76,8 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
     apiKeyEnv: "OPENAI_API_KEY",
     modelOnWire: "gpt-5",
     supportsTools: true,
+    // GPT-5 is best-in-class for reasoning, code, tool-use, and vision.
+    strengths: { reasoning: 1, code: 1, tools: 1, vision: 2, chat: 2 },
   },
   "lovable-openai": {
     id: "lovable-openai",
@@ -83,6 +87,8 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
     apiKeyEnv: "LOVABLE_API_KEY",
     modelOnWire: "openai/gpt-5",
     supportsTools: true,
+    // Same model as direct, slightly higher latency via gateway.
+    strengths: { reasoning: 2, code: 2, tools: 2, vision: 3, chat: 3 },
   },
   "lovable-google": {
     id: "lovable-google",
@@ -92,6 +98,8 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
     apiKeyEnv: "LOVABLE_API_KEY",
     modelOnWire: "google/gemini-3-flash-preview",
     supportsTools: true,
+    // Gemini Flash wins on speed, cost, and bulk classification.
+    strengths: { fast: 1, cheap: 1, vision: 1, chat: 3, code: 4 },
   },
 };
 
