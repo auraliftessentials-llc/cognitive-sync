@@ -281,7 +281,7 @@ async function callProvider(
  * Throws only if EVERY provider in the chain fails.
  */
 export async function callBrain(opts: CallOptions): Promise<BrainResponse> {
-  const chain = resolveChain(opts.preferredModel).filter((id) => !opts.exclude?.includes(id));
+  const chain = resolveChain(opts.preferredModel, opts.taskKind).filter((id) => !opts.exclude?.includes(id));
   const fallbacks: { provider: ProviderId; status: number; error: string }[] = [];
 
   for (const id of chain) {
