@@ -195,7 +195,7 @@ export function CEOVoiceHub() {
               {autoSpeak ? <Volume2 className="h-3 w-3 mr-1" /> : <VolumeX className="h-3 w-3 mr-1" />}
               {autoSpeak ? "Voice on" : "Voice off"}
             </Button>
-            <Link to="/console" className="text-[10px] text-brand-blue hover:underline">
+            <Link to="/console" search={{ agent: undefined, cmd: undefined }} className="text-[10px] text-brand-blue hover:underline">
               Full console →
             </Link>
           </div>
