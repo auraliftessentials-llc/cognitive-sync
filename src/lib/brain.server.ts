@@ -126,15 +126,33 @@ export type ProviderHealth = {
 };
 
 /**
- * Resolve which provider to TRY first based on a model hint.
- * If the operator picked x-ai/grok-4 explicitly we honour that, but fallback
- * still flows through the rest of the chain on failure.
+ * Resolve which providers to try, in priority order.
+ *
+ * Priority:
+ *   1. If `preferredModel` is set AND its provider is configured → that first.
+ *   2. Otherwise, if `taskKind` is set → providers ranked by their strength
+ *      score for that task (lower = better), then alphabetical for ties.
+ *   3. Otherwise → DEFAULT_FALLBACK_CHAIN.
+ *
+ * Whatever the head of the chain is, the rest of DEFAULT_FALLBACK_CHAIN is
+ * appended so we always have automatic failover.
  */
-export function resolveChain(preferredModel?: string): ProviderId[] {
-  if (!preferredModel) return DEFAULT_FALLBACK_CHAIN;
-  const direct = Object.values(PROVIDERS).find((p) => p.model === preferredModel)?.id;
-  if (!direct) return DEFAULT_FALLBACK_CHAIN;
-  return [direct, ...DEFAULT_FALLBACK_CHAIN.filter((id) => id !== direct)];
+export function resolveChain(preferredModel?: string, taskKind?: TaskKind): ProviderId[] {
+  if (preferredModel) {
+    const direct = Object.values(PROVIDERS).find((p) => p.model === preferredModel)?.id;
+    if (direct) return [direct, ...DEFAULT_FALLBACK_CHAIN.filter((id) => id !== direct)];
+  }
+  if (taskKind) {
+    const ranked = Object.values(PROVIDERS)
+      .filter((p) => p.strengths[taskKind] !== undefined)
+      .sort((a, b) => (a.strengths[taskKind]! - b.strengths[taskKind]!) || a.id.localeCompare(b.id))
+      .map((p) => p.id);
+    if (ranked.length > 0) {
+      const tail = DEFAULT_FALLBACK_CHAIN.filter((id) => !ranked.includes(id));
+      return [...ranked, ...tail];
+    }
+  }
+  return DEFAULT_FALLBACK_CHAIN;
 }
 
 type CallOptions = {
@@ -142,6 +160,8 @@ type CallOptions = {
   tools?: any[];
   tool_choice?: "auto" | "none" | { type: "function"; function: { name: string } };
   preferredModel?: string;
+  /** Hint about the kind of work — used to pick the best provider first. */
+  taskKind?: TaskKind;
   reasoning_effort?: "minimal" | "low" | "medium" | "high" | "xhigh" | "none";
   /** Skip these providers (e.g. already-failed in a previous round). */
   exclude?: ProviderId[];
