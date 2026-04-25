@@ -8,8 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Github, KeyRound, ShieldCheck, LogOut, Mail } from "lucide-react";
+import { Github, KeyRound, ShieldCheck, LogOut, Mail, BookOpen, Copy, ExternalLink, Check } from "lucide-react";
 import { lovable } from "@/integrations/lovable";
+
+const GITHUB_CALLBACK_URL = "https://cldgrtzmlykoeahxkhuq.supabase.co/auth/v1/callback";
+const SUPABASE_GITHUB_PROVIDER_URL =
+  "https://supabase.com/dashboard/project/cldgrtzmlykoeahxkhuq/auth/providers?provider=Github";
+const GITHUB_OAUTH_APPS_URL = "https://github.com/settings/developers";
 
 export const Route = createFileRoute("/settings/auth")({
   component: () => (
