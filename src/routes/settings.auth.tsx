@@ -263,3 +263,137 @@ function ProviderRow({
     </div>
   );
 }
+
+function CopyField({ value, label }: { value: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      toast.success(`${label ?? "Value"} copied`);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-border/60 bg-muted/30 px-2.5 py-1.5">
+      <code className="flex-1 truncate font-mono text-xs">{value}</code>
+      <Button size="sm" variant="ghost" className="h-7 px-2" onClick={copy}>
+        {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+      </Button>
+    </div>
+  );
+}
+
+function GitHubSetupGuide() {
+  return (
+    <section className="glow-border rounded-lg p-6 mb-6">
+      <div className="flex items-center gap-2 mb-1">
+        <BookOpen className="h-4 w-4 text-primary" />
+        <h2 className="font-display text-sm tracking-[0.2em] uppercase">
+          GitHub OAuth setup guide
+        </h2>
+      </div>
+      <p className="text-xs text-muted-foreground mb-5">
+        Follow these steps once to enable the “Continue with GitHub” button.
+      </p>
+
+      <ol className="space-y-5">
+        <Step n={1} title="Create a GitHub OAuth App">
+          <p className="text-sm text-muted-foreground mb-2">
+            Open GitHub → Settings → Developer settings → OAuth Apps →{" "}
+            <span className="text-foreground">New OAuth App</span>.
+          </p>
+          <a
+            href={GITHUB_OAUTH_APPS_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+          >
+            Open GitHub Developer Settings <ExternalLink className="h-3 w-3" />
+          </a>
+        </Step>
+
+        <Step n={2} title="Fill in the app fields">
+          <ul className="text-sm space-y-2">
+            <li>
+              <span className="text-muted-foreground">Application name:</span>{" "}
+              anything (e.g. “Neural Ops”).
+            </li>
+            <li>
+              <span className="text-muted-foreground">Homepage URL:</span>
+              <div className="mt-1">
+                <CopyField value={window.location.origin} label="Homepage URL" />
+              </div>
+            </li>
+            <li>
+              <span className="text-muted-foreground">
+                Authorization callback URL{" "}
+                <span className="text-destructive">(must match exactly)</span>:
+              </span>
+              <div className="mt-1">
+                <CopyField value={GITHUB_CALLBACK_URL} label="Callback URL" />
+              </div>
+            </li>
+          </ul>
+        </Step>
+
+        <Step n={3} title="Generate a client secret">
+          <p className="text-sm text-muted-foreground">
+            On the OAuth app page, click <span className="text-foreground">Generate a new client secret</span>.
+            Copy both the <span className="text-foreground">Client ID</span> and{" "}
+            <span className="text-foreground">Client Secret</span> — the secret is shown only once.
+          </p>
+        </Step>
+
+        <Step n={4} title="Paste into the backend (Lovable Cloud)">
+          <p className="text-sm text-muted-foreground mb-2">
+            Open the GitHub provider in your backend, toggle{" "}
+            <span className="text-foreground">Enable Sign in with GitHub</span>, and paste:
+          </p>
+          <ul className="text-sm space-y-1.5 mb-3">
+            <li>
+              <span className="text-muted-foreground">Client ID</span> → from GitHub
+            </li>
+            <li>
+              <span className="text-muted-foreground">Client Secret</span> → from GitHub
+            </li>
+          </ul>
+          <a
+            href={SUPABASE_GITHUB_PROVIDER_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+          >
+            Open GitHub provider settings <ExternalLink className="h-3 w-3" />
+          </a>
+        </Step>
+
+        <Step n={5} title="Test it">
+          <p className="text-sm text-muted-foreground">
+            Save in the backend, then come back here and click{" "}
+            <span className="text-foreground">Link</span> next to GitHub above (or use the{" "}
+            <span className="text-foreground">Continue with GitHub</span> button on the sign-in page).
+            If you get <code className="text-xs">redirect_uri_mismatch</code>, the callback URL in
+            step 2 doesn't match — re-copy it from here.
+          </p>
+        </Step>
+      </ol>
+    </section>
+  );
+}
+
+function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+  return (
+    <li className="flex gap-3">
+      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-primary/40 bg-primary/10 text-xs font-mono text-primary">
+        {n}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-display text-sm mb-1.5">{title}</div>
+        {children}
+      </div>
+    </li>
+  );
+}
