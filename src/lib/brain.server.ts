@@ -56,12 +56,14 @@ export type TaskKind = "reasoning" | "code" | "chat" | "fast" | "tools" | "visio
 export type BrainProvider = {
   id: ProviderId;
   label: string;
-  model: string;            // model identifier as the operator sees it (x-ai/..., openai/..., google/...)
+  model: string;            // operator-facing model id
   endpoint: string;
   apiKeyEnv: string;
-  modelOnWire: string;      // model string actually sent to the provider
+  modelOnWire: string;      // exact string sent on the wire
   supportsTools: boolean;
-  /** Lower number = stronger fit for that task. Missing = not preferred. */
+  /** Wire shape — how to build the request body and parse the response. */
+  wireFormat: WireFormat;
+  /** Lower number = stronger fit. Missing = not preferred. */
   strengths: Partial<Record<TaskKind, number>>;
 };
 
@@ -74,7 +76,7 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
     apiKeyEnv: "XAI_API_KEY",
     modelOnWire: "grok-4",
     supportsTools: true,
-    // Grok is strong at reasoning + chat, decent at tools, weak at vision/cheap.
+    wireFormat: "openai",
     strengths: { reasoning: 2, chat: 2, tools: 3, code: 3 },
   },
   "openai-direct": {
@@ -85,38 +87,66 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
     apiKeyEnv: "OPENAI_API_KEY",
     modelOnWire: "gpt-5",
     supportsTools: true,
-    // GPT-5 is best-in-class for reasoning, code, tool-use, and vision.
+    wireFormat: "openai",
     strengths: { reasoning: 1, code: 1, tools: 1, vision: 2, chat: 2 },
+  },
+  "anthropic-direct": {
+    id: "anthropic-direct",
+    label: "Claude Sonnet 4.5 (Anthropic)",
+    model: "anthropic/claude-sonnet-4-5",
+    endpoint: "https://api.anthropic.com/v1/messages",
+    apiKeyEnv: "ANTHROPIC_API_KEY",
+    modelOnWire: "claude-sonnet-4-5",
+    supportsTools: true,
+    wireFormat: "anthropic",
+    // Claude is elite at long-context reasoning, code review, and agentic tools.
+    strengths: { reasoning: 1, code: 1, tools: 2, chat: 2 },
+  },
+  "google-direct": {
+    id: "google-direct",
+    label: "Gemini 2.5 Pro (Google direct)",
+    model: "google/gemini-2.5-pro",
+    endpoint: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent",
+    apiKeyEnv: "GEMINI_API_KEY",
+    modelOnWire: "gemini-2.5-pro",
+    supportsTools: true,
+    wireFormat: "gemini",
+    // Gemini Pro: strong vision, long context, multimodal.
+    strengths: { vision: 1, fast: 2, cheap: 2, chat: 3, reasoning: 3 },
   },
   "lovable-openai": {
     id: "lovable-openai",
-    label: "GPT-5 (Lovable)",
+    label: "GPT-5 (Lovable last-resort)",
     model: "openai/gpt-5",
     endpoint: "https://ai.gateway.lovable.dev/v1/chat/completions",
     apiKeyEnv: "LOVABLE_API_KEY",
     modelOnWire: "openai/gpt-5",
     supportsTools: true,
-    // Same model as direct, slightly higher latency via gateway.
-    strengths: { reasoning: 2, code: 2, tools: 2, vision: 3, chat: 3 },
+    wireFormat: "openai",
+    // Demoted: same model as direct but only used if every direct provider fails.
+    strengths: { reasoning: 5, code: 5, tools: 5, chat: 5 },
   },
   "lovable-google": {
     id: "lovable-google",
-    label: "Gemini 3 Flash (Lovable)",
+    label: "Gemini Flash (Lovable last-resort)",
     model: "google/gemini-3-flash-preview",
     endpoint: "https://ai.gateway.lovable.dev/v1/chat/completions",
     apiKeyEnv: "LOVABLE_API_KEY",
     modelOnWire: "google/gemini-3-flash-preview",
     supportsTools: true,
-    // Gemini Flash wins on speed, cost, and bulk classification.
-    strengths: { fast: 1, cheap: 1, vision: 1, chat: 3, code: 4 },
+    wireFormat: "openai",
+    // Last-resort. Only beats nothing.
+    strengths: { fast: 5, cheap: 5, chat: 6 },
   },
 };
 
-// Order = priority. Each provider is tried in turn; missing keys are skipped
-// so adding OPENAI_API_KEY automatically activates the direct OpenAI hop.
+// Order = priority. Direct providers first; Lovable gateway is final fallback.
+// Missing keys are skipped automatically.
 export const DEFAULT_FALLBACK_CHAIN: ProviderId[] = [
   "xai",
   "openai-direct",
+  "anthropic-direct",
+  "google-direct",
   "lovable-openai",
   "lovable-google",
 ];
