@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Brain } from "lucide-react";
 import { toast } from "sonner";
+import { lovable } from "@/integrations/lovable";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -52,6 +53,31 @@ function AuthPage() {
         <p className="text-sm text-muted-foreground mb-6">
           {mode === "signin" ? "Sign in to your command center." : "Create your cognitive layer."}
         </p>
+
+        <Button
+          type="button"
+          variant="outline"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            const result = await lovable.auth.signInWithOAuth("google", {
+              redirect_uri: window.location.origin + "/dashboard",
+            });
+            if (result.error) {
+              setBusy(false);
+              toast.error(result.error.message ?? "Google sign-in failed");
+            }
+          }}
+          className="w-full mb-4"
+        >
+          Continue with Google
+        </Button>
+
+        <div className="flex items-center gap-2 my-4">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground">or email</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
 
         <form onSubmit={submit} className="space-y-4">
           <div>
