@@ -32,6 +32,18 @@ export type BrainMessage = {
 
 export type ProviderId = "xai" | "openai-direct" | "lovable-openai" | "lovable-google";
 
+/**
+ * Task kinds — used to pick the best provider for a given job.
+ *  - reasoning: deep multi-step analysis, math, code review (GPT-5 / Grok strong)
+ *  - code:      code generation / refactors (GPT-5 best, Grok solid, Gemini ok)
+ *  - chat:      open-ended conversation (any work, prefer cheaper/faster)
+ *  - fast:      latency-sensitive small responses (Gemini Flash wins)
+ *  - tools:     function-calling / agent loops (GPT-5 most reliable, then xAI)
+ *  - vision:    image input (Gemini and GPT-5 only)
+ *  - cheap:     bulk / classification / summarisation (Gemini Flash)
+ */
+export type TaskKind = "reasoning" | "code" | "chat" | "fast" | "tools" | "vision" | "cheap";
+
 export type BrainProvider = {
   id: ProviderId;
   label: string;
@@ -40,6 +52,8 @@ export type BrainProvider = {
   apiKeyEnv: string;
   modelOnWire: string;      // model string actually sent to the provider
   supportsTools: boolean;
+  /** Lower number = stronger fit for that task. Missing = not preferred. */
+  strengths: Partial<Record<TaskKind, number>>;
 };
 
 export const PROVIDERS: Record<ProviderId, BrainProvider> = {
