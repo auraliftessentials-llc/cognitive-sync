@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Github, KeyRound, ShieldCheck, LogOut, Mail, BookOpen, Copy, ExternalLink, Check } from "lucide-react";
+import { Github, KeyRound, ShieldCheck, LogOut, Mail, BookOpen, Copy, ExternalLink, Check, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { lovable } from "@/integrations/lovable";
 
 const GITHUB_CALLBACK_URL = "https://cldgrtzmlykoeahxkhuq.supabase.co/auth/v1/callback";
@@ -371,16 +371,141 @@ function GitHubSetupGuide() {
         </Step>
 
         <Step n={5} title="Test it">
-          <p className="text-sm text-muted-foreground">
-            Save in the backend, then come back here and click{" "}
-            <span className="text-foreground">Link</span> next to GitHub above (or use the{" "}
-            <span className="text-foreground">Continue with GitHub</span> button on the sign-in page).
-            If you get <code className="text-xs">redirect_uri_mismatch</code>, the callback URL in
-            step 2 doesn't match — re-copy it from here.
+          <p className="text-sm text-muted-foreground mb-3">
+            Save in the backend, then click the button below. It will probe the GitHub
+            authorize endpoint and report the exact failure reason if anything is wrong.
           </p>
+          <VerifyGitHubOAuth />
         </Step>
       </ol>
     </section>
+  );
+}
+
+function VerifyGitHubOAuth() {
+  const [state, setState] = useState<
+    | { kind: "idle" }
+    | { kind: "checking" }
+    | { kind: "ok"; message: string }
+    | { kind: "error"; title: string; detail: string; hint?: string }
+  >({ kind: "idle" });
+
+  const run = async () => {
+    setState({ kind: "checking" });
+    try {
+      // Ask Supabase for the GitHub authorize URL without redirecting the browser.
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "github",
+        options: {
+          redirectTo: window.location.origin + "/settings/auth",
+          scopes: "read:user user:email",
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error || !data?.url) {
+        const msg = error?.message ?? "No authorize URL returned";
+        if (/provider is not enabled/i.test(msg) || /unsupported provider/i.test(msg)) {
+          setState({
+            kind: "error",
+            title: "GitHub provider is disabled in your backend",
+            detail: msg,
+            hint: "Open the GitHub provider settings (Step 4) and toggle 'Enable Sign in with GitHub' on, then save.",
+          });
+          return;
+        }
+        setState({ kind: "error", title: "Could not start OAuth flow", detail: msg });
+        return;
+      }
+
+      // Probe the GitHub authorize URL — GitHub returns 200 on success or an
+      // error page when the client_id / redirect_uri doesn't match.
+      const authorizeUrl = data.url;
+      let probeText = "";
+      let probeStatus = 0;
+      try {
+        const res = await fetch(authorizeUrl, { method: "GET", redirect: "follow", mode: "cors" });
+        probeStatus = res.status;
+        probeText = await res.text().catch(() => "");
+      } catch {
+        // CORS will usually block reading the body; fall through to URL inspection.
+      }
+
+      const lower = probeText.toLowerCase();
+      if (/redirect_uri is not associated/i.test(probeText) || /redirect_uri_mismatch/i.test(probeText)) {
+        setState({
+          kind: "error",
+          title: "redirect_uri mismatch",
+          detail:
+            "GitHub rejected the callback URL. The 'Authorization callback URL' on your GitHub OAuth App must be exactly: " +
+            GITHUB_CALLBACK_URL,
+          hint: "Copy the callback URL from Step 2 and paste it into your GitHub OAuth App. Trailing slashes and http vs https matter.",
+        });
+        return;
+      }
+      if (lower.includes("the client_id and/or client_secret passed are incorrect") || /incorrect.*client_id/i.test(probeText)) {
+        setState({
+          kind: "error",
+          title: "Client ID or Client Secret is wrong",
+          detail: "GitHub says the credentials don't match an OAuth App.",
+          hint: "Re-copy the Client ID and a fresh Client Secret from your GitHub OAuth App into the backend (Step 4).",
+        });
+        return;
+      }
+      if (probeStatus >= 400 && probeStatus !== 0) {
+        setState({
+          kind: "error",
+          title: `GitHub returned HTTP ${probeStatus}`,
+          detail: probeText.slice(0, 300) || "No response body. Open the URL manually to see the error.",
+        });
+        return;
+      }
+
+      setState({
+        kind: "ok",
+        message:
+          "GitHub authorize URL generated and reachable. The provider is enabled and the callback host is registered. Click 'Link' above to finish a real sign-in test.",
+      });
+    } catch (e) {
+      setState({
+        kind: "error",
+        title: "Verification failed",
+        detail: e instanceof Error ? e.message : String(e),
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <Button size="sm" onClick={run} disabled={state.kind === "checking"} variant="outline">
+        {state.kind === "checking" ? (
+          <>
+            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+            Checking…
+          </>
+        ) : (
+          "Verify GitHub OAuth works"
+        )}
+      </Button>
+
+      {state.kind === "ok" && (
+        <div className="flex gap-2 rounded-md border border-primary/30 bg-primary/10 p-3 text-sm">
+          <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+          <span>{state.message}</span>
+        </div>
+      )}
+
+      {state.kind === "error" && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm space-y-1.5">
+          <div className="flex gap-2">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
+            <span className="font-display">{state.title}</span>
+          </div>
+          <div className="pl-6 text-muted-foreground break-words">{state.detail}</div>
+          {state.hint && <div className="pl-6 text-xs text-foreground/80">→ {state.hint}</div>}
+        </div>
+      )}
+    </div>
   );
 }
 
