@@ -258,19 +258,84 @@ async function recordHealth(
   }
 }
 
-async function callProvider(
+/**
+ * Build the wire request for a given provider format.
+ * Returns { url, headers, body, normalize } where `normalize` converts the
+ * provider's response into an OpenAI-style { choices: [{ message }] } shape so
+ * the rest of the system stays uniform.
+ */
+function buildRequest(
   p: BrainProvider,
+  apiKey: string,
   opts: CallOptions,
-): Promise<{ ok: true; data: any; status: number } | { ok: false; status: number; error: string }> {
-  const apiKey = process.env[p.apiKeyEnv];
-  if (!apiKey) {
-    return { ok: false, status: 0, error: `${p.apiKeyEnv} not configured` };
+): {
+  url: string;
+  headers: Record<string, string>;
+  body: string;
+  normalize: (raw: any) => any;
+} {
+  if (p.wireFormat === "anthropic") {
+    // Anthropic separates `system` from messages and uses x-api-key auth.
+    const systemMsgs = opts.messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+    const convo = opts.messages
+      .filter((m) => m.role !== "system")
+      .map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content }));
+    const body: Record<string, unknown> = {
+      model: p.modelOnWire,
+      max_tokens: 4096,
+      messages: convo,
+    };
+    if (systemMsgs) body.system = systemMsgs;
+    if (opts.tools?.length) {
+      body.tools = opts.tools.map((t: any) => ({
+        name: t.function?.name ?? t.name,
+        description: t.function?.description ?? t.description,
+        input_schema: t.function?.parameters ?? t.input_schema ?? {},
+      }));
+    }
+    return {
+      url: p.endpoint,
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      normalize: (raw: any) => {
+        const text = (raw?.content ?? [])
+          .filter((b: any) => b.type === "text")
+          .map((b: any) => b.text)
+          .join("");
+        return { choices: [{ message: { role: "assistant", content: text } }] };
+      },
+    };
   }
 
-  const body: Record<string, unknown> = {
-    model: p.modelOnWire,
-    messages: opts.messages,
-  };
+  if (p.wireFormat === "gemini") {
+    // Gemini direct: ?key=API_KEY, system as systemInstruction, messages as contents.
+    const systemMsgs = opts.messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+    const contents = opts.messages
+      .filter((m) => m.role !== "system")
+      .map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      }));
+    const body: Record<string, unknown> = { contents };
+    if (systemMsgs) body.systemInstruction = { parts: [{ text: systemMsgs }] };
+    return {
+      url: `${p.endpoint}?key=${encodeURIComponent(apiKey)}`,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      normalize: (raw: any) => {
+        const text =
+          raw?.candidates?.[0]?.content?.parts?.map((pt: any) => pt.text ?? "").join("") ?? "";
+        return { choices: [{ message: { role: "assistant", content: text } }] };
+      },
+    };
+  }
+
+  // Default: OpenAI-compatible (xAI, OpenAI, Lovable Gateway).
+  const body: Record<string, unknown> = { model: p.modelOnWire, messages: opts.messages };
   if (opts.tools?.length && p.supportsTools) {
     body.tools = opts.tools;
     body.tool_choice = opts.tool_choice ?? "auto";
@@ -282,17 +347,30 @@ async function callProvider(
   ) {
     body.reasoning = { effort: opts.reasoning_effort };
   }
+  return {
+    url: p.endpoint,
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    normalize: (raw: any) => raw,
+  };
+}
 
+async function callProvider(
+  p: BrainProvider,
+  opts: CallOptions,
+): Promise<{ ok: true; data: any; status: number } | { ok: false; status: number; error: string }> {
+  const apiKey = process.env[p.apiKeyEnv];
+  if (!apiKey) {
+    return { ok: false, status: 0, error: `${p.apiKeyEnv} not configured` };
+  }
+
+  const req = buildRequest(p, apiKey, opts);
   const t0 = Date.now();
   let r: Response;
   try {
     r = await fetchWithTimeout(
-      p.endpoint,
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      },
+      req.url,
+      { method: "POST", headers: req.headers, body: req.body },
       opts.timeoutMs ?? 45_000,
     );
   } catch (e: any) {
@@ -304,7 +382,8 @@ async function callProvider(
   const latency = Date.now() - t0;
 
   if (r.ok) {
-    const data = await r.json();
+    const raw = await r.json();
+    const data = req.normalize(raw);
     void recordHealth(p.id, "ok", r.status, undefined, latency);
     return { ok: true, data, status: r.status };
   }
