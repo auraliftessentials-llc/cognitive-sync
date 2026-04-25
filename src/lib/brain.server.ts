@@ -30,7 +30,16 @@ export type BrainMessage = {
   tool_calls?: any[];
 };
 
-export type ProviderId = "xai" | "openai-direct" | "lovable-openai" | "lovable-google";
+export type ProviderId =
+  | "xai"
+  | "openai-direct"
+  | "anthropic-direct"
+  | "google-direct"
+  | "lovable-openai"
+  | "lovable-google";
+
+/** API request/response shape — providers diverge here. */
+export type WireFormat = "openai" | "anthropic" | "gemini";
 
 /**
  * Task kinds — used to pick the best provider for a given job.
@@ -47,12 +56,14 @@ export type TaskKind = "reasoning" | "code" | "chat" | "fast" | "tools" | "visio
 export type BrainProvider = {
   id: ProviderId;
   label: string;
-  model: string;            // model identifier as the operator sees it (x-ai/..., openai/..., google/...)
+  model: string;            // operator-facing model id
   endpoint: string;
   apiKeyEnv: string;
-  modelOnWire: string;      // model string actually sent to the provider
+  modelOnWire: string;      // exact string sent on the wire
   supportsTools: boolean;
-  /** Lower number = stronger fit for that task. Missing = not preferred. */
+  /** Wire shape — how to build the request body and parse the response. */
+  wireFormat: WireFormat;
+  /** Lower number = stronger fit. Missing = not preferred. */
   strengths: Partial<Record<TaskKind, number>>;
 };
 
@@ -65,7 +76,7 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
     apiKeyEnv: "XAI_API_KEY",
     modelOnWire: "grok-4",
     supportsTools: true,
-    // Grok is strong at reasoning + chat, decent at tools, weak at vision/cheap.
+    wireFormat: "openai",
     strengths: { reasoning: 2, chat: 2, tools: 3, code: 3 },
   },
   "openai-direct": {
@@ -76,38 +87,66 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
     apiKeyEnv: "OPENAI_API_KEY",
     modelOnWire: "gpt-5",
     supportsTools: true,
-    // GPT-5 is best-in-class for reasoning, code, tool-use, and vision.
+    wireFormat: "openai",
     strengths: { reasoning: 1, code: 1, tools: 1, vision: 2, chat: 2 },
+  },
+  "anthropic-direct": {
+    id: "anthropic-direct",
+    label: "Claude Sonnet 4.5 (Anthropic)",
+    model: "anthropic/claude-sonnet-4-5",
+    endpoint: "https://api.anthropic.com/v1/messages",
+    apiKeyEnv: "ANTHROPIC_API_KEY",
+    modelOnWire: "claude-sonnet-4-5",
+    supportsTools: true,
+    wireFormat: "anthropic",
+    // Claude is elite at long-context reasoning, code review, and agentic tools.
+    strengths: { reasoning: 1, code: 1, tools: 2, chat: 2 },
+  },
+  "google-direct": {
+    id: "google-direct",
+    label: "Gemini 2.5 Pro (Google direct)",
+    model: "google/gemini-2.5-pro",
+    endpoint: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent",
+    apiKeyEnv: "GEMINI_API_KEY",
+    modelOnWire: "gemini-2.5-pro",
+    supportsTools: true,
+    wireFormat: "gemini",
+    // Gemini Pro: strong vision, long context, multimodal.
+    strengths: { vision: 1, fast: 2, cheap: 2, chat: 3, reasoning: 3 },
   },
   "lovable-openai": {
     id: "lovable-openai",
-    label: "GPT-5 (Lovable)",
+    label: "GPT-5 (Lovable last-resort)",
     model: "openai/gpt-5",
     endpoint: "https://ai.gateway.lovable.dev/v1/chat/completions",
     apiKeyEnv: "LOVABLE_API_KEY",
     modelOnWire: "openai/gpt-5",
     supportsTools: true,
-    // Same model as direct, slightly higher latency via gateway.
-    strengths: { reasoning: 2, code: 2, tools: 2, vision: 3, chat: 3 },
+    wireFormat: "openai",
+    // Demoted: same model as direct but only used if every direct provider fails.
+    strengths: { reasoning: 5, code: 5, tools: 5, chat: 5 },
   },
   "lovable-google": {
     id: "lovable-google",
-    label: "Gemini 3 Flash (Lovable)",
+    label: "Gemini Flash (Lovable last-resort)",
     model: "google/gemini-3-flash-preview",
     endpoint: "https://ai.gateway.lovable.dev/v1/chat/completions",
     apiKeyEnv: "LOVABLE_API_KEY",
     modelOnWire: "google/gemini-3-flash-preview",
     supportsTools: true,
-    // Gemini Flash wins on speed, cost, and bulk classification.
-    strengths: { fast: 1, cheap: 1, vision: 1, chat: 3, code: 4 },
+    wireFormat: "openai",
+    // Last-resort. Only beats nothing.
+    strengths: { fast: 5, cheap: 5, chat: 6 },
   },
 };
 
-// Order = priority. Each provider is tried in turn; missing keys are skipped
-// so adding OPENAI_API_KEY automatically activates the direct OpenAI hop.
+// Order = priority. Direct providers first; Lovable gateway is final fallback.
+// Missing keys are skipped automatically.
 export const DEFAULT_FALLBACK_CHAIN: ProviderId[] = [
   "xai",
   "openai-direct",
+  "anthropic-direct",
+  "google-direct",
   "lovable-openai",
   "lovable-google",
 ];
@@ -219,19 +258,84 @@ async function recordHealth(
   }
 }
 
-async function callProvider(
+/**
+ * Build the wire request for a given provider format.
+ * Returns { url, headers, body, normalize } where `normalize` converts the
+ * provider's response into an OpenAI-style { choices: [{ message }] } shape so
+ * the rest of the system stays uniform.
+ */
+function buildRequest(
   p: BrainProvider,
+  apiKey: string,
   opts: CallOptions,
-): Promise<{ ok: true; data: any; status: number } | { ok: false; status: number; error: string }> {
-  const apiKey = process.env[p.apiKeyEnv];
-  if (!apiKey) {
-    return { ok: false, status: 0, error: `${p.apiKeyEnv} not configured` };
+): {
+  url: string;
+  headers: Record<string, string>;
+  body: string;
+  normalize: (raw: any) => any;
+} {
+  if (p.wireFormat === "anthropic") {
+    // Anthropic separates `system` from messages and uses x-api-key auth.
+    const systemMsgs = opts.messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+    const convo = opts.messages
+      .filter((m) => m.role !== "system")
+      .map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content }));
+    const body: Record<string, unknown> = {
+      model: p.modelOnWire,
+      max_tokens: 4096,
+      messages: convo,
+    };
+    if (systemMsgs) body.system = systemMsgs;
+    if (opts.tools?.length) {
+      body.tools = opts.tools.map((t: any) => ({
+        name: t.function?.name ?? t.name,
+        description: t.function?.description ?? t.description,
+        input_schema: t.function?.parameters ?? t.input_schema ?? {},
+      }));
+    }
+    return {
+      url: p.endpoint,
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      normalize: (raw: any) => {
+        const text = (raw?.content ?? [])
+          .filter((b: any) => b.type === "text")
+          .map((b: any) => b.text)
+          .join("");
+        return { choices: [{ message: { role: "assistant", content: text } }] };
+      },
+    };
   }
 
-  const body: Record<string, unknown> = {
-    model: p.modelOnWire,
-    messages: opts.messages,
-  };
+  if (p.wireFormat === "gemini") {
+    // Gemini direct: ?key=API_KEY, system as systemInstruction, messages as contents.
+    const systemMsgs = opts.messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+    const contents = opts.messages
+      .filter((m) => m.role !== "system")
+      .map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      }));
+    const body: Record<string, unknown> = { contents };
+    if (systemMsgs) body.systemInstruction = { parts: [{ text: systemMsgs }] };
+    return {
+      url: `${p.endpoint}?key=${encodeURIComponent(apiKey)}`,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      normalize: (raw: any) => {
+        const text =
+          raw?.candidates?.[0]?.content?.parts?.map((pt: any) => pt.text ?? "").join("") ?? "";
+        return { choices: [{ message: { role: "assistant", content: text } }] };
+      },
+    };
+  }
+
+  // Default: OpenAI-compatible (xAI, OpenAI, Lovable Gateway).
+  const body: Record<string, unknown> = { model: p.modelOnWire, messages: opts.messages };
   if (opts.tools?.length && p.supportsTools) {
     body.tools = opts.tools;
     body.tool_choice = opts.tool_choice ?? "auto";
@@ -243,17 +347,30 @@ async function callProvider(
   ) {
     body.reasoning = { effort: opts.reasoning_effort };
   }
+  return {
+    url: p.endpoint,
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    normalize: (raw: any) => raw,
+  };
+}
 
+async function callProvider(
+  p: BrainProvider,
+  opts: CallOptions,
+): Promise<{ ok: true; data: any; status: number } | { ok: false; status: number; error: string }> {
+  const apiKey = process.env[p.apiKeyEnv];
+  if (!apiKey) {
+    return { ok: false, status: 0, error: `${p.apiKeyEnv} not configured` };
+  }
+
+  const req = buildRequest(p, apiKey, opts);
   const t0 = Date.now();
   let r: Response;
   try {
     r = await fetchWithTimeout(
-      p.endpoint,
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      },
+      req.url,
+      { method: "POST", headers: req.headers, body: req.body },
       opts.timeoutMs ?? 45_000,
     );
   } catch (e: any) {
@@ -265,7 +382,8 @@ async function callProvider(
   const latency = Date.now() - t0;
 
   if (r.ok) {
-    const data = await r.json();
+    const raw = await r.json();
+    const data = req.normalize(raw);
     void recordHealth(p.id, "ok", r.status, undefined, latency);
     return { ok: true, data, status: r.status };
   }
@@ -326,17 +444,13 @@ export async function checkAllProviders(): Promise<ProviderHealth[]> {
       }
       const t0 = Date.now();
       try {
+        // Reuse the wire adapter so each provider gets a valid ping.
+        const req = buildRequest(p, apiKey, {
+          messages: [{ role: "user", content: "ping" }],
+        });
         const r = await fetchWithTimeout(
-          p.endpoint,
-          {
-            method: "POST",
-            headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              model: p.modelOnWire,
-              messages: [{ role: "user", content: "ping" }],
-              max_tokens: 1,
-            }),
-          },
+          req.url,
+          { method: "POST", headers: req.headers, body: req.body },
           10_000,
         );
         const latency_ms = Date.now() - t0;
