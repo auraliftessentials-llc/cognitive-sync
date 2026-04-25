@@ -444,17 +444,13 @@ export async function checkAllProviders(): Promise<ProviderHealth[]> {
       }
       const t0 = Date.now();
       try {
+        // Reuse the wire adapter so each provider gets a valid ping.
+        const req = buildRequest(p, apiKey, {
+          messages: [{ role: "user", content: "ping" }],
+        });
         const r = await fetchWithTimeout(
-          p.endpoint,
-          {
-            method: "POST",
-            headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              model: p.modelOnWire,
-              messages: [{ role: "user", content: "ping" }],
-              max_tokens: 1,
-            }),
-          },
+          req.url,
+          { method: "POST", headers: req.headers, body: req.body },
           10_000,
         );
         const latency_ms = Date.now() - t0;
