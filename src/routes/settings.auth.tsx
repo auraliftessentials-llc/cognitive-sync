@@ -186,6 +186,8 @@ function Page() {
         </div>
       </Section>
 
+      <GitHubSetupGuide />
+
       <Section icon={LogOut} title="Active sessions">
         <p className="text-sm text-muted-foreground mb-3">
           Sign out from this browser, or revoke every session across all devices.
