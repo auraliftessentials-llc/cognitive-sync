@@ -245,7 +245,7 @@ export function CEOVoiceHub() {
                   runCommand(transcript);
                 }
               }}
-              placeholder='Try: "What\'s my next move?" or "Daily brief"  ·  ⌘↵ to send'
+              placeholder={'Try: "What is my next move?" or "Daily brief"  ·  \u2318\u21B5 to send'}
               rows={2}
               className="font-mono text-sm resize-none bg-background/40"
               disabled={busy}
