@@ -30,7 +30,16 @@ export type BrainMessage = {
   tool_calls?: any[];
 };
 
-export type ProviderId = "xai" | "openai-direct" | "lovable-openai" | "lovable-google";
+export type ProviderId =
+  | "xai"
+  | "openai-direct"
+  | "anthropic-direct"
+  | "google-direct"
+  | "lovable-openai"
+  | "lovable-google";
+
+/** API request/response shape — providers diverge here. */
+export type WireFormat = "openai" | "anthropic" | "gemini";
 
 /**
  * Task kinds — used to pick the best provider for a given job.
