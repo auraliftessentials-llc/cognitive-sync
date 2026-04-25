@@ -11,6 +11,7 @@ import { generateSuggestions } from "@/lib/ai.functions";
 import { getResendStatus, sendResendTest, type ResendStatus } from "@/lib/resend.functions";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { CEOVoiceHub } from "@/components/CEOVoiceHub";
 
 export const Route = createFileRoute("/dashboard")({
   component: () => (
@@ -83,6 +84,8 @@ function Dashboard() {
         </QuickAction>
         <QuickAction to="/suggestions" icon={Sparkles} title="Next moves" subtitle="AI-generated, ranked, actionable" />
       </div>
+
+      <CEOVoiceHub />
 
       <div className="grid lg:grid-cols-2 gap-6">
         <section className="cathedral-card rounded-xl p-5">
