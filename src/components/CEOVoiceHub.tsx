@@ -1,0 +1,290 @@
+/**
+ * CEO Voice Hub — single-button voice command center.
+ *
+ * Mic → Web Speech API (browser STT, free, instant) → consoleRun(ceo-grok)
+ *     → ElevenLabs TTS playback (server-side speak()).
+ *
+ * Falls back gracefully when speech recognition isn't available
+ * (Safari iOS / Firefox); user can still type and hear the reply.
+ */
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Mic, MicOff, Loader2, Volume2, VolumeX, Send, Sparkles, Crown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { consoleRun } from "@/lib/console.functions";
+import { speak } from "@/lib/voice.functions";
+import { Link } from "@tanstack/react-router";
+
+type Phase = "idle" | "listening" | "thinking" | "speaking" | "error";
+
+// Web Speech API — typed loosely; not in lib.dom for non-Chromium.
+function getRecognition(): any | null {
+  if (typeof window === "undefined") return null;
+  const C = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  return C ? new C() : null;
+}
+
+const QUICK_COMMANDS = [
+  { label: "Daily brief", text: "Give me my daily brief: top 3 moves, 1 risk, 1 quick win." },
+  { label: "Status check", text: "What's the status of my active projects? Anything blocked?" },
+  { label: "Next move", text: "What is my single highest-leverage next move right now? Be specific." },
+  { label: "Revenue", text: "Where's the fastest path to revenue this week across my portfolio?" },
+];
+
+export function CEOVoiceHub() {
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [transcript, setTranscript] = useState("");
+  const [reply, setReply] = useState<string>("");
+  const [autoSpeak, setAutoSpeak] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [agentLabel, setAgentLabel] = useState<string>("CEO Grok");
+
+  const recRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const sttSupported = typeof window !== "undefined" && !!getRecognition();
+
+  // Stop everything on unmount
+  useEffect(() => {
+    return () => {
+      try { recRef.current?.stop?.(); } catch { /* noop */ }
+      try { audioRef.current?.pause(); } catch { /* noop */ }
+    };
+  }, []);
+
+  const playAudio = useCallback(async (b64: string) => {
+    try {
+      audioRef.current?.pause();
+      const audio = new Audio(`data:audio/mpeg;base64,${b64}`);
+      audioRef.current = audio;
+      audio.onended = () => setPhase("idle");
+      audio.onerror = () => setPhase("idle");
+      setPhase("speaking");
+      await audio.play();
+    } catch (e: any) {
+      setPhase("idle");
+      toast.error(e?.message ?? "Audio playback blocked — click the page first.");
+    }
+  }, []);
+
+  const runCommand = useCallback(
+    async (text: string) => {
+      const prompt = text.trim();
+      if (!prompt) return;
+      setError(null);
+      setReply("");
+      setPhase("thinking");
+      try {
+        const res = await consoleRun({ data: { agent_slug: "ceo-grok", prompt } });
+        setAgentLabel(`${res.agent.emoji} ${res.agent.name}`);
+        const out = res.output ?? "";
+        setReply(out);
+        if (autoSpeak && out) {
+          // Trim to first ~600 chars for snappy voice; keep full text on screen.
+          const spoken = out.length > 700 ? out.slice(0, 700) + "…" : out;
+          const tts = await speak({ data: { text: spoken } });
+          if (tts.ok && tts.audio_base64) {
+            await playAudio(tts.audio_base64);
+            return;
+          }
+          if (!tts.ok) toast.error(`Voice: ${tts.error}`);
+        }
+        setPhase("idle");
+      } catch (e: any) {
+        const msg = e?.message ?? "Command failed";
+        setError(msg);
+        setPhase("error");
+        toast.error(msg);
+      }
+    },
+    [autoSpeak, playAudio],
+  );
+
+  const startListening = useCallback(() => {
+    setError(null);
+    const rec = getRecognition();
+    if (!rec) {
+      toast.error("Voice recognition not supported in this browser. Use Chrome or Edge.");
+      return;
+    }
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.lang = "en-US";
+
+    let finalText = "";
+    rec.onresult = (e: any) => {
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) finalText += r[0].transcript;
+        else interim += r[0].transcript;
+      }
+      setTranscript(finalText + interim);
+    };
+    rec.onerror = (e: any) => {
+      setPhase("idle");
+      const m = e?.error === "not-allowed" ? "Microphone permission denied" : `Mic: ${e?.error ?? "error"}`;
+      setError(m);
+      toast.error(m);
+    };
+    rec.onend = () => {
+      const captured = finalText.trim();
+      if (captured) {
+        setTranscript(captured);
+        runCommand(captured);
+      } else if (phase === "listening") {
+        setPhase("idle");
+      }
+    };
+
+    try {
+      rec.start();
+      recRef.current = rec;
+      setPhase("listening");
+      setTranscript("");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not start mic");
+    }
+  }, [phase, runCommand]);
+
+  const stopListening = useCallback(() => {
+    try { recRef.current?.stop?.(); } catch { /* noop */ }
+  }, []);
+
+  const stopAudio = useCallback(() => {
+    try { audioRef.current?.pause(); } catch { /* noop */ }
+    setPhase("idle");
+  }, []);
+
+  const busy = phase === "thinking" || phase === "speaking";
+  const phaseColor =
+    phase === "listening" ? "text-brand-cyan" :
+    phase === "thinking" ? "text-brand-violet" :
+    phase === "speaking" ? "text-brand-green" :
+    phase === "error" ? "text-destructive" : "text-muted-foreground";
+
+  return (
+    <section className="cathedral-card rounded-xl p-5 mt-6 relative overflow-hidden">
+      {/* Ambient glow */}
+      <div
+        className={`absolute -top-16 -right-16 w-48 h-48 rounded-full blur-3xl opacity-30 transition-colors ${
+          phase === "listening" ? "bg-brand-cyan" :
+          phase === "thinking" ? "bg-brand-violet" :
+          phase === "speaking" ? "bg-brand-green" :
+          "bg-brand-blue"
+        }`}
+      />
+
+      <div className="relative">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Crown className="h-4 w-4 text-brand-blue" />
+            <h2 className="font-display text-lg tracking-wider">CEO VOICE HUB</h2>
+            <span className={`text-[10px] uppercase tracking-[0.2em] ${phaseColor}`}>
+              · {phase}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setAutoSpeak((v) => !v)}
+              className="h-7 text-[10px]"
+              title="Toggle voice reply"
+            >
+              {autoSpeak ? <Volume2 className="h-3 w-3 mr-1" /> : <VolumeX className="h-3 w-3 mr-1" />}
+              {autoSpeak ? "Voice on" : "Voice off"}
+            </Button>
+            <Link to="/console" search={{ agent: undefined, cmd: undefined }} className="text-[10px] text-brand-blue hover:underline">
+              Full console →
+            </Link>
+          </div>
+        </div>
+
+        {/* Big push-to-talk */}
+        <div className="flex items-center gap-3 mb-4">
+          <button
+            onClick={phase === "listening" ? stopListening : phase === "speaking" ? stopAudio : startListening}
+            disabled={phase === "thinking"}
+            aria-label={phase === "listening" ? "Stop listening" : "Start voice command"}
+            className={`relative h-16 w-16 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
+              phase === "listening"
+                ? "border-brand-cyan bg-brand-cyan/20 animate-pulse"
+                : phase === "thinking"
+                  ? "border-brand-violet bg-brand-violet/20 cursor-wait"
+                  : phase === "speaking"
+                    ? "border-brand-green bg-brand-green/20"
+                    : "border-brand-blue/60 bg-brand-blue/10 hover:bg-brand-blue/20 hover:scale-105"
+            }`}
+          >
+            {phase === "thinking" ? (
+              <Loader2 className="h-7 w-7 animate-spin text-brand-violet" />
+            ) : phase === "speaking" ? (
+              <VolumeX className="h-7 w-7 text-brand-green" />
+            ) : phase === "listening" ? (
+              <MicOff className="h-7 w-7 text-brand-cyan" />
+            ) : (
+              <Mic className="h-7 w-7 text-brand-blue" />
+            )}
+          </button>
+
+          <div className="flex-1 min-w-0">
+            <div className="text-xs text-muted-foreground mb-1">
+              {phase === "listening" && "Listening… speak your command."}
+              {phase === "thinking" && `${agentLabel} is thinking…`}
+              {phase === "speaking" && `${agentLabel} is speaking. Tap to stop.`}
+              {phase === "idle" && (sttSupported ? "Tap mic, or type a command below." : "Voice STT unavailable in this browser — type below.")}
+              {phase === "error" && (error ?? "Something went wrong.")}
+            </div>
+            <Textarea
+              value={transcript}
+              onChange={(e) => setTranscript(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  runCommand(transcript);
+                }
+              }}
+              placeholder={'Try: "What is my next move?" or "Daily brief"  ·  \u2318\u21B5 to send'}
+              rows={2}
+              className="font-mono text-sm resize-none bg-background/40"
+              disabled={busy}
+            />
+          </div>
+
+          <Button
+            onClick={() => runCommand(transcript)}
+            disabled={busy || !transcript.trim()}
+            className="bg-brand-blue text-white hover:bg-brand-blue/90 h-16 px-4"
+            aria-label="Send command"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          </Button>
+        </div>
+
+        {/* Quick commands */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {QUICK_COMMANDS.map((q) => (
+            <button
+              key={q.label}
+              disabled={busy}
+              onClick={() => { setTranscript(q.text); runCommand(q.text); }}
+              className="text-[11px] px-2.5 py-1 rounded-full border border-border/60 bg-card/40 hover:border-brand-blue/50 hover:bg-brand-blue/10 transition disabled:opacity-50"
+            >
+              <Sparkles className="h-2.5 w-2.5 inline mr-1 text-brand-blue" />
+              {q.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Reply */}
+        {reply && (
+          <div className="rounded-lg border border-border/60 bg-card/40 p-3 max-h-64 overflow-auto animate-fade-in-up">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{agentLabel}</div>
+            <div className="text-sm whitespace-pre-wrap leading-relaxed">{reply}</div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
