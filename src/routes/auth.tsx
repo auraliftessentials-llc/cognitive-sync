@@ -4,9 +4,10 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Brain } from "lucide-react";
+import { Brain, Github } from "lucide-react";
 import { toast } from "sonner";
 import { lovable } from "@/integrations/lovable";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -68,9 +69,33 @@ function AuthPage() {
               toast.error(result.error.message ?? "Google sign-in failed");
             }
           }}
-          className="w-full mb-4"
+          className="w-full mb-2"
         >
           Continue with Google
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            const { error } = await supabase.auth.signInWithOAuth({
+              provider: "github",
+              options: {
+                redirectTo: window.location.origin + "/dashboard",
+                scopes: "read:user user:email",
+              },
+            });
+            if (error) {
+              setBusy(false);
+              toast.error(error.message ?? "GitHub sign-in failed");
+            }
+          }}
+          className="w-full mb-4"
+        >
+          <Github className="h-4 w-4 mr-2" />
+          Continue with GitHub
         </Button>
 
         <div className="flex items-center gap-2 my-4">
