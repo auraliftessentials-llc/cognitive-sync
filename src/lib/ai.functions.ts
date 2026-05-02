@@ -83,10 +83,13 @@ ${ctx}
 
 When suggesting next moves, be specific and reference actual project names. If the library is empty, prompt them to add projects first.`;
 
-    const reply = await callAI([
-      { role: "system", content: system },
-      ...(history ?? []).map((m: any) => ({ role: m.role, content: m.content })),
-    ]);
+    const reply = await callAI(
+      [
+        { role: "system", content: system },
+        ...(history ?? []).map((m: any) => ({ role: m.role, content: m.content })),
+      ],
+      "reasoning",
+    );
 
     await supabase.from("messages").insert({
       conversation_id: data.conversationId,
