@@ -32,7 +32,6 @@ export type BrainMessage = {
 
 export type ProviderId =
   | "xai"
-  | "xai-2"
   | "openai-direct"
   | "anthropic-direct"
   | "google-direct"
