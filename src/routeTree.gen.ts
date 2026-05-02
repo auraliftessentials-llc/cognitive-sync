@@ -28,6 +28,7 @@ import { Route as HooksRunCliSchedulesRouteImport } from './routes/hooks/run-cli
 import { Route as ApiZohoCallbackRouteImport } from './routes/api/zoho.callback'
 import { Route as ApiCliStreamRouteImport } from './routes/api/cli.stream'
 import { Route as ApiCliSplatRouteImport } from './routes/api/cli.$'
+import { Route as ApiPublicBridgeSplatRouteImport } from './routes/api/public/bridge.$'
 
 const TerminalRoute = TerminalRouteImport.update({
   id: '/terminal',
@@ -124,6 +125,11 @@ const ApiCliSplatRoute = ApiCliSplatRouteImport.update({
   path: '/api/cli/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicBridgeSplatRoute = ApiPublicBridgeSplatRouteImport.update({
+  id: '/api/public/bridge/$',
+  path: '/api/public/bridge/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/api/cli/$': typeof ApiCliSplatRoute
   '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
+  '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -166,6 +173,7 @@ export interface FileRoutesByTo {
   '/api/cli/$': typeof ApiCliSplatRoute
   '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
+  '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -188,6 +196,7 @@ export interface FileRoutesById {
   '/api/cli/$': typeof ApiCliSplatRoute
   '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
+  '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -211,6 +220,7 @@ export interface FileRouteTypes {
     | '/api/cli/$'
     | '/api/cli/stream'
     | '/api/zoho/callback'
+    | '/api/public/bridge/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -232,6 +242,7 @@ export interface FileRouteTypes {
     | '/api/cli/$'
     | '/api/cli/stream'
     | '/api/zoho/callback'
+    | '/api/public/bridge/$'
   id:
     | '__root__'
     | '/'
@@ -253,6 +264,7 @@ export interface FileRouteTypes {
     | '/api/cli/$'
     | '/api/cli/stream'
     | '/api/zoho/callback'
+    | '/api/public/bridge/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -275,6 +287,7 @@ export interface RootRouteChildren {
   ApiCliSplatRoute: typeof ApiCliSplatRoute
   ApiCliStreamRoute: typeof ApiCliStreamRoute
   ApiZohoCallbackRoute: typeof ApiZohoCallbackRoute
+  ApiPublicBridgeSplatRoute: typeof ApiPublicBridgeSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -412,6 +425,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCliSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/bridge/$': {
+      id: '/api/public/bridge/$'
+      path: '/api/public/bridge/$'
+      fullPath: '/api/public/bridge/$'
+      preLoaderRoute: typeof ApiPublicBridgeSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -435,6 +455,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCliSplatRoute: ApiCliSplatRoute,
   ApiCliStreamRoute: ApiCliStreamRoute,
   ApiZohoCallbackRoute: ApiZohoCallbackRoute,
+  ApiPublicBridgeSplatRoute: ApiPublicBridgeSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
