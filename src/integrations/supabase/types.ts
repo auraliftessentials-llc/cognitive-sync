@@ -260,6 +260,113 @@ export type Database = {
         }
         Relationships: []
       }
+      bridge_audit: {
+        Row: {
+          action: string
+          bytes: number | null
+          created_at: string
+          device_id: string | null
+          duration_ms: number | null
+          error: string | null
+          id: string
+          ip: string | null
+          ok: boolean
+          target: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          bytes?: number | null
+          created_at?: string
+          device_id?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          ip?: string | null
+          ok?: boolean
+          target?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          bytes?: number | null
+          created_at?: string
+          device_id?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          ip?: string | null
+          ok?: boolean
+          target?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bridge_audit_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "bridge_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bridge_devices: {
+        Row: {
+          allowed_roots: string[]
+          api_key_hash: string | null
+          api_key_prefix: string | null
+          capabilities: string[]
+          created_at: string
+          hostname: string | null
+          id: string
+          last_seen_at: string | null
+          name: string
+          paired_at: string | null
+          pairing_code: string | null
+          pairing_expires_at: string | null
+          platform: string
+          revoked_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allowed_roots?: string[]
+          api_key_hash?: string | null
+          api_key_prefix?: string | null
+          capabilities?: string[]
+          created_at?: string
+          hostname?: string | null
+          id?: string
+          last_seen_at?: string | null
+          name: string
+          paired_at?: string | null
+          pairing_code?: string | null
+          pairing_expires_at?: string | null
+          platform?: string
+          revoked_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allowed_roots?: string[]
+          api_key_hash?: string | null
+          api_key_prefix?: string | null
+          capabilities?: string[]
+          created_at?: string
+          hostname?: string | null
+          id?: string
+          last_seen_at?: string | null
+          name?: string
+          paired_at?: string | null
+          pairing_code?: string | null
+          pairing_expires_at?: string | null
+          platform?: string
+          revoked_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cli_schedule_runs: {
         Row: {
           attempt: number
@@ -900,9 +1007,27 @@ export type Database = {
           last_sign_in_at: string
         }[]
       }
+      claim_bridge_pairing: {
+        Args: {
+          _code: string
+          _hash: string
+          _hostname: string
+          _prefix: string
+        }
+        Returns: string
+      }
       claim_schedule: {
         Args: { _id: string; _lock_seconds?: number }
         Returns: boolean
+      }
+      find_bridge_device: {
+        Args: { _hash: string }
+        Returns: {
+          allowed_roots: string[]
+          capabilities: string[]
+          device_id: string
+          user_id: string
+        }[]
       }
       find_cli_token_user: {
         Args: { _hash: string }

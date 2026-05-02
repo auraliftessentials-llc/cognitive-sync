@@ -18,6 +18,7 @@
   "shortcuts": [
     { "name": "Console",   "short_name": "Console",   "url": "/console",   "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
     { "name": "Pulse",     "short_name": "Pulse",     "url": "/dashboard", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Bridge",    "short_name": "Bridge",    "url": "/bridge",    "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
     { "name": "Agents",    "short_name": "Agents",    "url": "/agents",    "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
     { "name": "Voice Hub", "short_name": "Voice",     "url": "/dashboard#voice", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
   ]
