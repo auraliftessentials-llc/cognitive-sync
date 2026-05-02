@@ -32,7 +32,6 @@ export type BrainMessage = {
 
 export type ProviderId =
   | "xai"
-  | "xai-2"
   | "openai-direct"
   | "anthropic-direct"
   | "google-direct"
@@ -75,17 +74,6 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
     model: "x-ai/grok-4",
     endpoint: "https://api.x.ai/v1/chat/completions",
     apiKeyEnv: "XAI_API_KEY",
-    modelOnWire: "grok-4",
-    supportsTools: true,
-    wireFormat: "openai",
-    strengths: { reasoning: 2, chat: 2, tools: 3, code: 3 },
-  },
-  "xai-2": {
-    id: "xai-2",
-    label: "Grok 4 (xAI · backup key)",
-    model: "x-ai/grok-4",
-    endpoint: "https://api.x.ai/v1/chat/completions",
-    apiKeyEnv: "XAI_API_KEY_2",
     modelOnWire: "grok-4",
     supportsTools: true,
     wireFormat: "openai",
@@ -156,7 +144,6 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
 // Missing keys are skipped automatically.
 export const DEFAULT_FALLBACK_CHAIN: ProviderId[] = [
   "xai",
-  "xai-2",
   "openai-direct",
   "anthropic-direct",
   "google-direct",
