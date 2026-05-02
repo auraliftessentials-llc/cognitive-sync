@@ -1,24 +1,21 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { callBrain, type BrainMessage, type TaskKind } from "./brain.server";
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-
-async function callAI(messages: Array<{ role: string; content: string }>, model = "google/gemini-3-flash-preview") {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("LOVABLE_API_KEY is not configured");
-  const res = await fetch(GATEWAY, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model, messages }),
+/**
+ * Sovereign AI gateway — routes through brain.server.ts so the Master's own
+ * keys (xAI Grok → OpenAI → Anthropic → Gemini → Lovable last-resort) are
+ * always used, with automatic fallback. NEVER call Lovable AI directly.
+ */
+async function callAI(
+  messages: Array<{ role: string; content: string }>,
+  taskKind: TaskKind = "chat",
+): Promise<string> {
+  const res = await callBrain({
+    messages: messages as BrainMessage[],
+    taskKind,
   });
-  if (!res.ok) {
-    const t = await res.text();
-    if (res.status === 429) throw new Error("Rate limit hit. Please wait a moment and retry.");
-    if (res.status === 402) throw new Error("AI credits exhausted. Add credits in Lovable workspace settings.");
-    throw new Error(`AI gateway error ${res.status}: ${t}`);
-  }
-  const json = await res.json();
-  return json.choices?.[0]?.message?.content ?? "";
+  return res.message.content ?? "";
 }
 
 async function buildContext(supabase: any, userId: string) {
