@@ -172,14 +172,15 @@ export const summarizeProject = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!p) throw new Error("Project not found");
 
-    const summary = await callAI([
-      {
-        role: "system",
-        content: "You summarize software projects in 2-3 punchy sentences. Be concrete. No fluff.",
-      },
-      {
-        role: "user",
-        content: `Project: ${p.name}
+    const summary = await callAI(
+      [
+        {
+          role: "system",
+          content: "You summarize software projects in 2-3 punchy sentences. Be concrete. No fluff.",
+        },
+        {
+          role: "user",
+          content: `Project: ${p.name}
 Status: ${p.status}
 Description: ${p.description ?? "(none)"}
 Tech: ${(p.tech_stack ?? []).join(", ")}
@@ -187,8 +188,10 @@ Tags: ${(p.tags ?? []).join(", ")}
 Notes: ${p.notes ?? "(none)"}
 
 Write a sharp summary of what this project IS and its current state.`,
-      },
-    ]);
+        },
+      ],
+      "fast",
+    );
 
     return { summary };
   });
