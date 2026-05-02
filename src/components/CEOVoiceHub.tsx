@@ -25,10 +25,15 @@ function getRecognition(): any | null {
   return C ? new C() : null;
 }
 
+const MAGIC_COMMANDS = [
+  { label: "Next", text: "Next", desc: "Top moves" },
+  { label: "Do it", text: "Do it", desc: "Execute #1" },
+  { label: "Status", text: "Status", desc: "Live sitrep" },
+  { label: "Brain", text: "Brain", desc: "Autonomous mode" },
+];
+
 const QUICK_COMMANDS = [
   { label: "Daily brief", text: "Give me my daily brief: top 3 moves, 1 risk, 1 quick win." },
-  { label: "Status check", text: "What's the status of my active projects? Anything blocked?" },
-  { label: "Next move", text: "What is my single highest-leverage next move right now? Be specific." },
   { label: "Revenue", text: "Where's the fastest path to revenue this week across my portfolio?" },
 ];
 
@@ -266,6 +271,29 @@ export function CEOVoiceHub() {
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
+        </div>
+
+        {/* Magic commands — sovereign single-word shortcuts */}
+        <div className="mb-3">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-1.5">
+            ✦ Magic commands
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {MAGIC_COMMANDS.map((q) => (
+              <button
+                key={q.label}
+                disabled={busy}
+                onClick={() => { setTranscript(q.text); runCommand(q.text); }}
+                className="group flex flex-col items-center justify-center px-2 py-2 rounded-lg border border-brand-blue/40 bg-gradient-to-br from-brand-blue/10 to-brand-violet/10 hover:from-brand-blue/20 hover:to-brand-violet/20 hover:border-brand-cyan transition disabled:opacity-50"
+                title={q.desc}
+              >
+                <span className="font-display text-sm tracking-wider text-brand-cyan group-hover:text-white transition">
+                  {q.label.toUpperCase()}
+                </span>
+                <span className="text-[9px] text-muted-foreground mt-0.5">{q.desc}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Quick commands */}
