@@ -27,7 +27,11 @@ type RouterIntent =
   | "github"
   | "zoho"
   | "cloudflare"
-  | "chat";
+  | "chat"
+  | "magic.next"
+  | "magic.do"
+  | "magic.status"
+  | "magic.brain";
 
 export type CommandRouterResult = {
   ok: boolean;
