@@ -620,6 +620,36 @@ export type Database = {
         }
         Relationships: []
       }
+      key_rotations: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          provider: string
+          requires_republish: boolean
+          rotated_at: string
+          rotated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          provider: string
+          requires_republish?: boolean
+          rotated_at?: string
+          rotated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          provider?: string
+          requires_republish?: boolean
+          rotated_at?: string
+          rotated_by?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -821,6 +851,42 @@ export type Database = {
           key?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_notices: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string
+          dismissed_at: string | null
+          id: string
+          metadata: Json
+          notice_key: string
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          metadata?: Json
+          notice_key: string
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          metadata?: Json
+          notice_key?: string
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
         }
         Relationships: []
       }
