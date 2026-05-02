@@ -14,7 +14,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-type ProviderId = "xai" | "lovable-openai" | "lovable-google";
+type ProviderId =
+  | "xai"
+  | "openai-direct"
+  | "anthropic-direct"
+  | "lovable-openai"
+  | "lovable-google";
 
 type ProviderDef = {
   id: ProviderId;
@@ -22,6 +27,8 @@ type ProviderDef = {
   endpoint: string;
   apiKeyEnv: string;
   modelOnWire: string;
+  /** anthropic uses x-api-key + anthropic-version headers */
+  wire: "openai" | "anthropic";
 };
 
 const PROVIDERS: Record<ProviderId, ProviderDef> = {
@@ -31,6 +38,23 @@ const PROVIDERS: Record<ProviderId, ProviderDef> = {
     endpoint: "https://api.x.ai/v1/chat/completions",
     apiKeyEnv: "XAI_API_KEY",
     modelOnWire: "grok-4",
+    wire: "openai",
+  },
+  "openai-direct": {
+    id: "openai-direct",
+    model: "openai/gpt-5",
+    endpoint: "https://api.openai.com/v1/chat/completions",
+    apiKeyEnv: "OPENAI_API_KEY",
+    modelOnWire: "gpt-5",
+    wire: "openai",
+  },
+  "anthropic-direct": {
+    id: "anthropic-direct",
+    model: "anthropic/claude-sonnet-4-5",
+    endpoint: "https://api.anthropic.com/v1/messages",
+    apiKeyEnv: "ANTHROPIC_API_KEY",
+    modelOnWire: "claude-sonnet-4-5",
+    wire: "anthropic",
   },
   "lovable-openai": {
     id: "lovable-openai",
@@ -38,6 +62,7 @@ const PROVIDERS: Record<ProviderId, ProviderDef> = {
     endpoint: "https://ai.gateway.lovable.dev/v1/chat/completions",
     apiKeyEnv: "LOVABLE_API_KEY",
     modelOnWire: "openai/gpt-5",
+    wire: "openai",
   },
   "lovable-google": {
     id: "lovable-google",
@@ -45,10 +70,18 @@ const PROVIDERS: Record<ProviderId, ProviderDef> = {
     endpoint: "https://ai.gateway.lovable.dev/v1/chat/completions",
     apiKeyEnv: "LOVABLE_API_KEY",
     modelOnWire: "google/gemini-3-flash-preview",
+    wire: "openai",
   },
 };
 
-const DEFAULT_CHAIN: ProviderId[] = ["xai", "lovable-openai", "lovable-google"];
+// Master's keys first, Lovable last-resort.
+const DEFAULT_CHAIN: ProviderId[] = [
+  "xai",
+  "openai-direct",
+  "anthropic-direct",
+  "lovable-openai",
+  "lovable-google",
+];
 
 function resolveChain(preferredModel: string): ProviderId[] {
   const direct = (Object.values(PROVIDERS).find((p) => p.model === preferredModel)?.id) as ProviderId | undefined;
