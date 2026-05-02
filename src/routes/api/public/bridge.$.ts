@@ -76,7 +76,7 @@ export const Route = createFileRoute("/api/public/bridge/$")({
           let body: any = {};
           try { body = await request.json(); } catch { /* tolerate */ }
           const code = String(body?.code ?? "").trim().toUpperCase();
-          const hostname = String(body?.hostname ?? "").slice(0, 80) || null;
+          const hostname = (String(body?.hostname ?? "").slice(0, 80) || "") as string;
           if (!/^[A-Z0-9]{8}$/.test(code)) return json({ ok: false, error: "Bad code" }, 400);
 
           // Mint the API key first, then atomically claim the pairing row

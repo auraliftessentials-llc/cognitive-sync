@@ -17,6 +17,7 @@ import { Route as GithubRouteImport } from './routes/github'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ConsoleRouteImport } from './routes/console'
 import { Route as ChatRouteImport } from './routes/chat'
+import { Route as BridgeRouteImport } from './routes/bridge'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -26,6 +27,7 @@ import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as HooksSyncGithubRouteImport } from './routes/hooks/sync-github'
 import { Route as HooksRunCliSchedulesRouteImport } from './routes/hooks/run-cli-schedules'
 import { Route as ApiZohoCallbackRouteImport } from './routes/api/zoho.callback'
+import { Route as ApiPublicBridgeDaemonRouteImport } from './routes/api/public/bridge-daemon'
 import { Route as ApiCliStreamRouteImport } from './routes/api/cli.stream'
 import { Route as ApiCliSplatRouteImport } from './routes/api/cli.$'
 import { Route as ApiPublicBridgeSplatRouteImport } from './routes/api/public/bridge.$'
@@ -68,6 +70,11 @@ const ConsoleRoute = ConsoleRouteImport.update({
 const ChatRoute = ChatRouteImport.update({
   id: '/chat',
   path: '/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BridgeRoute = BridgeRouteImport.update({
+  id: '/bridge',
+  path: '/bridge',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -115,6 +122,11 @@ const ApiZohoCallbackRoute = ApiZohoCallbackRouteImport.update({
   path: '/api/zoho/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicBridgeDaemonRoute = ApiPublicBridgeDaemonRouteImport.update({
+  id: '/api/public/bridge-daemon',
+  path: '/api/public/bridge-daemon',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCliStreamRoute = ApiCliStreamRouteImport.update({
   id: '/api/cli/stream',
   path: '/api/cli/stream',
@@ -136,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/agents': typeof AgentsRoute
   '/auth': typeof AuthRoute
+  '/bridge': typeof BridgeRoute
   '/chat': typeof ChatRoute
   '/console': typeof ConsoleRoute
   '/dashboard': typeof DashboardRoute
@@ -150,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/settings/auth': typeof SettingsAuthRoute
   '/api/cli/$': typeof ApiCliSplatRoute
   '/api/cli/stream': typeof ApiCliStreamRoute
+  '/api/public/bridge-daemon': typeof ApiPublicBridgeDaemonRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
 }
@@ -158,6 +172,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/agents': typeof AgentsRoute
   '/auth': typeof AuthRoute
+  '/bridge': typeof BridgeRoute
   '/chat': typeof ChatRoute
   '/console': typeof ConsoleRoute
   '/dashboard': typeof DashboardRoute
@@ -172,6 +187,7 @@ export interface FileRoutesByTo {
   '/settings/auth': typeof SettingsAuthRoute
   '/api/cli/$': typeof ApiCliSplatRoute
   '/api/cli/stream': typeof ApiCliStreamRoute
+  '/api/public/bridge-daemon': typeof ApiPublicBridgeDaemonRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
 }
@@ -181,6 +197,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/agents': typeof AgentsRoute
   '/auth': typeof AuthRoute
+  '/bridge': typeof BridgeRoute
   '/chat': typeof ChatRoute
   '/console': typeof ConsoleRoute
   '/dashboard': typeof DashboardRoute
@@ -195,6 +212,7 @@ export interface FileRoutesById {
   '/settings/auth': typeof SettingsAuthRoute
   '/api/cli/$': typeof ApiCliSplatRoute
   '/api/cli/stream': typeof ApiCliStreamRoute
+  '/api/public/bridge-daemon': typeof ApiPublicBridgeDaemonRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
 }
@@ -205,6 +223,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/agents'
     | '/auth'
+    | '/bridge'
     | '/chat'
     | '/console'
     | '/dashboard'
@@ -219,6 +238,7 @@ export interface FileRouteTypes {
     | '/settings/auth'
     | '/api/cli/$'
     | '/api/cli/stream'
+    | '/api/public/bridge-daemon'
     | '/api/zoho/callback'
     | '/api/public/bridge/$'
   fileRoutesByTo: FileRoutesByTo
@@ -227,6 +247,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/agents'
     | '/auth'
+    | '/bridge'
     | '/chat'
     | '/console'
     | '/dashboard'
@@ -241,6 +262,7 @@ export interface FileRouteTypes {
     | '/settings/auth'
     | '/api/cli/$'
     | '/api/cli/stream'
+    | '/api/public/bridge-daemon'
     | '/api/zoho/callback'
     | '/api/public/bridge/$'
   id:
@@ -249,6 +271,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/agents'
     | '/auth'
+    | '/bridge'
     | '/chat'
     | '/console'
     | '/dashboard'
@@ -263,6 +286,7 @@ export interface FileRouteTypes {
     | '/settings/auth'
     | '/api/cli/$'
     | '/api/cli/stream'
+    | '/api/public/bridge-daemon'
     | '/api/zoho/callback'
     | '/api/public/bridge/$'
   fileRoutesById: FileRoutesById
@@ -272,6 +296,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AgentsRoute: typeof AgentsRoute
   AuthRoute: typeof AuthRoute
+  BridgeRoute: typeof BridgeRoute
   ChatRoute: typeof ChatRoute
   ConsoleRoute: typeof ConsoleRoute
   DashboardRoute: typeof DashboardRoute
@@ -286,6 +311,7 @@ export interface RootRouteChildren {
   SettingsAuthRoute: typeof SettingsAuthRoute
   ApiCliSplatRoute: typeof ApiCliSplatRoute
   ApiCliStreamRoute: typeof ApiCliStreamRoute
+  ApiPublicBridgeDaemonRoute: typeof ApiPublicBridgeDaemonRoute
   ApiZohoCallbackRoute: typeof ApiZohoCallbackRoute
   ApiPublicBridgeSplatRoute: typeof ApiPublicBridgeSplatRoute
 }
@@ -346,6 +372,13 @@ declare module '@tanstack/react-router' {
       path: '/chat'
       fullPath: '/chat'
       preLoaderRoute: typeof ChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bridge': {
+      id: '/bridge'
+      path: '/bridge'
+      fullPath: '/bridge'
+      preLoaderRoute: typeof BridgeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -411,6 +444,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiZohoCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/bridge-daemon': {
+      id: '/api/public/bridge-daemon'
+      path: '/api/public/bridge-daemon'
+      fullPath: '/api/public/bridge-daemon'
+      preLoaderRoute: typeof ApiPublicBridgeDaemonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/cli/stream': {
       id: '/api/cli/stream'
       path: '/api/cli/stream'
@@ -440,6 +480,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AgentsRoute: AgentsRoute,
   AuthRoute: AuthRoute,
+  BridgeRoute: BridgeRoute,
   ChatRoute: ChatRoute,
   ConsoleRoute: ConsoleRoute,
   DashboardRoute: DashboardRoute,
@@ -454,6 +495,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsAuthRoute: SettingsAuthRoute,
   ApiCliSplatRoute: ApiCliSplatRoute,
   ApiCliStreamRoute: ApiCliStreamRoute,
+  ApiPublicBridgeDaemonRoute: ApiPublicBridgeDaemonRoute,
   ApiZohoCallbackRoute: ApiZohoCallbackRoute,
   ApiPublicBridgeSplatRoute: ApiPublicBridgeSplatRoute,
 }
