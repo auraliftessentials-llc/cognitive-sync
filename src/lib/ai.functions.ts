@@ -119,10 +119,13 @@ For each, output a JSON object on its own line (JSONL) with fields:
 
 Output ONLY the JSONL lines, nothing else. No markdown fences.`;
 
-    const raw = await callAI([
-      { role: "system", content: "You output JSONL only. No prose. No code fences." },
-      { role: "user", content: prompt },
-    ]);
+    const raw = await callAI(
+      [
+        { role: "system", content: "You output JSONL only. No prose. No code fences." },
+        { role: "user", content: prompt },
+      ],
+      "reasoning",
+    );
 
     const lines = raw
       .split("\n")
