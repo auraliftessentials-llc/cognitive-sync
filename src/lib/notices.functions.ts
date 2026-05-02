@@ -82,13 +82,13 @@ export const setRepublishNotice = createServerFn({ method: "POST" })
     const userId = context.userId;
     const now = new Date().toISOString();
 
-    const payload: Record<string, unknown> = {
+    const payload = {
       user_id: userId,
       notice_key: NOTICE_KEY,
       dismissed_at: now,
       updated_at: now,
+      ...(data.acknowledge ? { acknowledged_at: now } : {}),
     };
-    if (data.acknowledge) payload.acknowledged_at = now;
 
     const { error } = await supabaseAdmin
       .from("user_notices")
