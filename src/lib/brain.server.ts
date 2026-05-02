@@ -35,6 +35,7 @@ export type ProviderId =
   | "openai-direct"
   | "anthropic-direct"
   | "google-direct"
+  | "openrouter"
   | "lovable-openai"
   | "lovable-google";
 
@@ -114,6 +115,21 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
     // Gemini Pro: strong vision, long context, multimodal.
     strengths: { vision: 1, fast: 2, cheap: 2, chat: 3, reasoning: 3 },
   },
+  openrouter: {
+    id: "openrouter",
+    label: "OpenRouter (200+ models)",
+    // Default to Claude Sonnet 4.5 via OpenRouter — top-tier reasoning + tools.
+    // Operators can override per-call via preferredModel (any OpenRouter model id).
+    model: "anthropic/claude-sonnet-4-5",
+    endpoint: "https://openrouter.ai/api/v1/chat/completions",
+    apiKeyEnv: "OPENROUTER_API_KEY",
+    modelOnWire: "anthropic/claude-sonnet-4.5",
+    supportsTools: true,
+    wireFormat: "openai",
+    // Universal fallback: covers DeepSeek, Claude, GPT, Gemini, Llama, Qwen, Mistral.
+    // Ranked just above Lovable last-resort so direct providers still win when healthy.
+    strengths: { reasoning: 4, code: 4, tools: 4, chat: 4, vision: 3, fast: 4, cheap: 4 },
+  },
   "lovable-openai": {
     id: "lovable-openai",
     label: "GPT-5 (Lovable last-resort)",
@@ -147,6 +163,7 @@ export const DEFAULT_FALLBACK_CHAIN: ProviderId[] = [
   "openai-direct",
   "anthropic-direct",
   "google-direct",
+  "openrouter",
   "lovable-openai",
   "lovable-google",
 ];
