@@ -273,6 +273,29 @@ export function CEOVoiceHub() {
           </Button>
         </div>
 
+        {/* Magic commands — sovereign single-word shortcuts */}
+        <div className="mb-3">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-1.5">
+            ✦ Magic commands
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {MAGIC_COMMANDS.map((q) => (
+              <button
+                key={q.label}
+                disabled={busy}
+                onClick={() => { setTranscript(q.text); runCommand(q.text); }}
+                className="group flex flex-col items-center justify-center px-2 py-2 rounded-lg border border-brand-blue/40 bg-gradient-to-br from-brand-blue/10 to-brand-violet/10 hover:from-brand-blue/20 hover:to-brand-violet/20 hover:border-brand-cyan transition disabled:opacity-50"
+                title={q.desc}
+              >
+                <span className="font-display text-sm tracking-wider text-brand-cyan group-hover:text-white transition">
+                  {q.label.toUpperCase()}
+                </span>
+                <span className="text-[9px] text-muted-foreground mt-0.5">{q.desc}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Quick commands */}
         <div className="flex flex-wrap gap-2 mb-4">
           {QUICK_COMMANDS.map((q) => (
