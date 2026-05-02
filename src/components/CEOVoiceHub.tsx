@@ -25,10 +25,15 @@ function getRecognition(): any | null {
   return C ? new C() : null;
 }
 
+const MAGIC_COMMANDS = [
+  { label: "Next", text: "Next", desc: "Top moves" },
+  { label: "Do it", text: "Do it", desc: "Execute #1" },
+  { label: "Status", text: "Status", desc: "Live sitrep" },
+  { label: "Brain", text: "Brain", desc: "Autonomous mode" },
+];
+
 const QUICK_COMMANDS = [
   { label: "Daily brief", text: "Give me my daily brief: top 3 moves, 1 risk, 1 quick win." },
-  { label: "Status check", text: "What's the status of my active projects? Anything blocked?" },
-  { label: "Next move", text: "What is my single highest-leverage next move right now? Be specific." },
   { label: "Revenue", text: "Where's the fastest path to revenue this week across my portfolio?" },
 ];
 
