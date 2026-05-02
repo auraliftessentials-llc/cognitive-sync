@@ -48,7 +48,17 @@ export type CommandRouterResult = {
  * we ever pay for an LLM call. Falls back to "chat" + a smart taskKind.
  */
 function classify(input: string): { intent: RouterIntent; taskKind: TaskKind; hint: string } {
-  const t = input.trim().toLowerCase();
+  const t = input.trim().toLowerCase().replace(/[!.?,]+$/g, "");
+
+  // === MAGIC COMMANDS — single-word sovereign shortcuts ===
+  if (/^(next|next move|what's next|whats next|next\?)$/.test(t))
+    return { intent: "magic.next", taskKind: "reasoning", hint: "MAGIC · Next moves" };
+  if (/^(do it|execute|go|ship it|run it|do the top|do top)$/.test(t))
+    return { intent: "magic.do", taskKind: "tools", hint: "MAGIC · Execute top task" };
+  if (/^(status|sitrep|state|what's running|whats running|report)$/.test(t))
+    return { intent: "magic.status", taskKind: "fast", hint: "MAGIC · Live status" };
+  if (/^(brain|autonomous|auto|take over|drive)$/.test(t))
+    return { intent: "magic.brain", taskKind: "reasoning", hint: "MAGIC · Autonomous mode" };
 
   // explicit verbs / namespaces
   if (/^(\/cli|cli:|run cli|execute cli|terminal:)/.test(t))
