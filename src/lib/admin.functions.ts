@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+import { callBrain } from "./brain.server";
 
 async function assertSuperAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
