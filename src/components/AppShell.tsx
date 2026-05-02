@@ -6,6 +6,7 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { Button } from "@/components/ui/button";
 import { CommandPalette } from "@/components/CommandPalette";
 import { BrainStatusBar } from "@/components/BrainStatusBar";
+import { RepublishBanner } from "@/components/RepublishBanner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -124,7 +125,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0">{children}</main>
+      <main className="flex-1 min-w-0 flex flex-col">
+        <RepublishBanner />
+        <div className="flex-1 min-w-0">{children}</div>
+      </main>
     </div>
   );
 }
