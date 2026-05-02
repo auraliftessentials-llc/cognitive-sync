@@ -3,6 +3,7 @@ import appCss from "../styles.css?url";
 import { AuthProvider } from "@/lib/auth-context";
 import { WorkspaceProvider } from "@/lib/workspace-context";
 import { Toaster } from "@/components/ui/sonner";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 
@@ -105,6 +106,7 @@ function RootComponent() {
       <AuthHeaderInjector />
       <WorkspaceProvider>
         <Outlet />
+        <PWAInstallPrompt />
         <Toaster richColors theme="dark" />
       </WorkspaceProvider>
     </AuthProvider>
