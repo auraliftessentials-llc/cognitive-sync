@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+import { callBrain } from "./brain.server";
 
 async function assertSuperAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
@@ -179,9 +178,6 @@ export const generateFleetInsights = createServerFn({ method: "POST" })
     const { supabase, userId } = context as any;
     await assertSuperAdmin(supabase, userId);
 
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("LOVABLE_API_KEY is not configured");
-
     const [usersRes, projectsRes, suggRes] = await Promise.all([
       supabase.rpc("admin_list_users"),
       supabase.from("projects").select("name, status, priority, tech_stack, tags, last_worked_on"),
@@ -218,20 +214,19 @@ ${[...projects]
   .map((p: any, i: number) => `${i + 1}. [${p.status}|P${p.priority}] ${p.name} — ${(p.tech_stack ?? []).join("/")}`)
   .join("\n")}`;
 
-    const res = await fetch(GATEWAY, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are the Fleet Strategist for a multi-tenant project intelligence platform. Output sharp, executive-grade insights. No fluff. No 'as an AI'. Use markdown with short sections.",
-          },
-          {
-            role: "user",
-            content: `${ctx}
+    // Route through the sovereign brain (Grok-first, multi-provider fallback).
+    const res = await callBrain({
+      taskKind: "reasoning",
+      reasoning_effort: "medium",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are the Fleet Strategist for a multi-tenant project intelligence platform. Output sharp, executive-grade insights. No fluff. No 'as an AI'. Use markdown with short sections.",
+        },
+        {
+          role: "user",
+          content: `${ctx}
 
 Produce a "Fleet Intelligence Briefing" with these sections:
 ### Health
@@ -244,17 +239,9 @@ Cross-project leverage points or merges worth doing.
 Numbered, imperative, specific (reference real project names).
 
 Be terse. Maximum 250 words total.`,
-          },
-        ],
-      }),
+        },
+      ],
     });
 
-    if (!res.ok) {
-      const t = await res.text();
-      if (res.status === 429) throw new Error("Rate limit hit. Retry shortly.");
-      if (res.status === 402) throw new Error("AI credits exhausted.");
-      throw new Error(`AI gateway ${res.status}: ${t}`);
-    }
-    const json = await res.json();
-    return { briefing: json.choices?.[0]?.message?.content ?? "" };
+    return { briefing: res.message.content ?? "", brain: `${res.provider} · ${res.model}` };
   });

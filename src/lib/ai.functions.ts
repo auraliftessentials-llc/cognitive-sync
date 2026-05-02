@@ -1,24 +1,21 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { callBrain, type BrainMessage, type TaskKind } from "./brain.server";
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-
-async function callAI(messages: Array<{ role: string; content: string }>, model = "google/gemini-3-flash-preview") {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("LOVABLE_API_KEY is not configured");
-  const res = await fetch(GATEWAY, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model, messages }),
+/**
+ * Sovereign AI gateway — routes through brain.server.ts so the Master's own
+ * keys (xAI Grok → OpenAI → Anthropic → Gemini → Lovable last-resort) are
+ * always used, with automatic fallback. NEVER call Lovable AI directly.
+ */
+async function callAI(
+  messages: Array<{ role: string; content: string }>,
+  taskKind: TaskKind = "chat",
+): Promise<string> {
+  const res = await callBrain({
+    messages: messages as BrainMessage[],
+    taskKind,
   });
-  if (!res.ok) {
-    const t = await res.text();
-    if (res.status === 429) throw new Error("Rate limit hit. Please wait a moment and retry.");
-    if (res.status === 402) throw new Error("AI credits exhausted. Add credits in Lovable workspace settings.");
-    throw new Error(`AI gateway error ${res.status}: ${t}`);
-  }
-  const json = await res.json();
-  return json.choices?.[0]?.message?.content ?? "";
+  return res.message.content ?? "";
 }
 
 async function buildContext(supabase: any, userId: string) {
@@ -86,10 +83,13 @@ ${ctx}
 
 When suggesting next moves, be specific and reference actual project names. If the library is empty, prompt them to add projects first.`;
 
-    const reply = await callAI([
-      { role: "system", content: system },
-      ...(history ?? []).map((m: any) => ({ role: m.role, content: m.content })),
-    ]);
+    const reply = await callAI(
+      [
+        { role: "system", content: system },
+        ...(history ?? []).map((m: any) => ({ role: m.role, content: m.content })),
+      ],
+      "reasoning",
+    );
 
     await supabase.from("messages").insert({
       conversation_id: data.conversationId,
@@ -119,10 +119,13 @@ For each, output a JSON object on its own line (JSONL) with fields:
 
 Output ONLY the JSONL lines, nothing else. No markdown fences.`;
 
-    const raw = await callAI([
-      { role: "system", content: "You output JSONL only. No prose. No code fences." },
-      { role: "user", content: prompt },
-    ]);
+    const raw = await callAI(
+      [
+        { role: "system", content: "You output JSONL only. No prose. No code fences." },
+        { role: "user", content: prompt },
+      ],
+      "reasoning",
+    );
 
     const lines = raw
       .split("\n")
@@ -169,14 +172,15 @@ export const summarizeProject = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!p) throw new Error("Project not found");
 
-    const summary = await callAI([
-      {
-        role: "system",
-        content: "You summarize software projects in 2-3 punchy sentences. Be concrete. No fluff.",
-      },
-      {
-        role: "user",
-        content: `Project: ${p.name}
+    const summary = await callAI(
+      [
+        {
+          role: "system",
+          content: "You summarize software projects in 2-3 punchy sentences. Be concrete. No fluff.",
+        },
+        {
+          role: "user",
+          content: `Project: ${p.name}
 Status: ${p.status}
 Description: ${p.description ?? "(none)"}
 Tech: ${(p.tech_stack ?? []).join(", ")}
@@ -184,8 +188,10 @@ Tags: ${(p.tags ?? []).join(", ")}
 Notes: ${p.notes ?? "(none)"}
 
 Write a sharp summary of what this project IS and its current state.`,
-      },
-    ]);
+        },
+      ],
+      "fast",
+    );
 
     return { summary };
   });
