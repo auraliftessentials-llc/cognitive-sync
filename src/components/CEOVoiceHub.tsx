@@ -12,7 +12,7 @@ import { Mic, MicOff, Loader2, Volume2, VolumeX, Send, Sparkles, Crown } from "l
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { consoleRun } from "@/lib/console.functions";
+import { commandRoute } from "@/lib/command-router.functions";
 import { speak } from "@/lib/voice.functions";
 import { Link } from "@tanstack/react-router";
 
@@ -75,12 +75,18 @@ export function CEOVoiceHub() {
       setReply("");
       setPhase("thinking");
       try {
-        const res = await consoleRun({ data: { agent_slug: "ceo-grok", prompt } });
-        setAgentLabel(`${res.agent.emoji} ${res.agent.name}`);
+        // Unified Command Router — classifies intent, picks best brain, falls
+        // back across all your keys (xAI → OpenAI → Claude → Gemini → Lovable).
+        const res = await commandRoute({ data: { prompt } });
+        setAgentLabel(`MERKABAH · ${res.intent}`);
         const out = res.output ?? "";
         setReply(out);
+        if (!res.ok) {
+          setError(out);
+          setPhase("error");
+          return;
+        }
         if (autoSpeak && out) {
-          // Trim to first ~600 chars for snappy voice; keep full text on screen.
           const spoken = out.length > 700 ? out.slice(0, 700) + "…" : out;
           const tts = await speak({ data: { text: spoken } });
           if (tts.ok && tts.audio_base64) {
