@@ -139,6 +139,34 @@ export const commandRoute = createServerFn({ method: "POST" })
       enrichedPrompt = `The Master needs LIVE information. Use web_research / Perplexity. Cite sources. Request: ${prompt}`;
     } else if (c.intent === "cli") {
       enrichedPrompt = `The Master wants to run something on the Super Agent CLI. Describe the command you'd run, then explain which agent should execute it. Request: ${prompt}`;
+    } else if (c.intent === "magic.next") {
+      enrichedPrompt = `MAGIC COMMAND "NEXT". Output exactly:
+1. Top 3 next moves (ranked by leverage, one line each, action verb first)
+2. The single move I should do RIGHT NOW (one sentence, imperative)
+3. Why (one sentence)
+No preamble. No fluff.`;
+    } else if (c.intent === "magic.do") {
+      enrichedPrompt = `MAGIC COMMAND "DO IT". The Master wants the #1 task from his most recent NEXT brief executed.
+- Identify the top task you previously surfaced (from history if present, else infer from the current state of the empire).
+- State exactly which subsystem you would invoke (slash command / tool / agent) to execute it.
+- If executable now via available tools, plan the exact tool call sequence.
+- End with: "STATUS: <one-line outcome or what's blocking execution>".`;
+    } else if (c.intent === "magic.status") {
+      enrichedPrompt = `MAGIC COMMAND "STATUS". Give a 5-line sitrep of the Master's empire RIGHT NOW:
+- Active agents / schedules
+- Open PRs / deploys
+- CRM hot deals
+- Brain provider in use (you)
+- One-line risk or none
+Output as a clean bullet list. No preamble.`;
+    } else if (c.intent === "magic.brain") {
+      enrichedPrompt = `MAGIC COMMAND "BRAIN" — Autonomous Mode engaged.
+You are now operating with full agency. Until told to stop:
+- Proactively decide the highest-leverage move
+- Chain tool calls without asking permission for read-only ops
+- For destructive ops, surface a one-line "CONFIRM?" prompt
+- Speak in operator-grade brevity
+Acknowledge with: "BRAIN ONLINE · {your model id} · standing by." then execute the user's next instruction. The Master's open instruction is: ${prompt}`;
     }
 
     const messages: BrainMessage[] = [
@@ -147,11 +175,23 @@ export const commandRoute = createServerFn({ method: "POST" })
       { role: "user", content: enrichedPrompt },
     ];
 
+    // Magic "Brain" + any reasoning-heavy magic command → force xAI Grok as
+    // the primary brain (Master's explicit preference). Other providers stay
+    // in the chain as automatic fallback if Grok is down.
+    const preferredModel =
+      c.intent === "magic.brain" || c.intent === "magic.next" || c.intent === "magic.do"
+        ? "x-ai/grok-4"
+        : undefined;
+
     try {
       const res = await callBrain({
         messages,
         taskKind,
-        reasoning_effort: c.intent === "reasoning" || c.intent === "code" ? "medium" : "low",
+        preferredModel,
+        reasoning_effort:
+          c.intent === "magic.brain" || c.intent === "reasoning" || c.intent === "code"
+            ? "medium"
+            : "low",
       });
       return {
         ok: true,
