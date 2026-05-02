@@ -153,6 +153,12 @@ Deno.serve(async (req) => {
 
     for (const id of chain) {
       const p = PROVIDERS[id];
+      // Streaming SSE loop only supports OpenAI-format wire. Anthropic stays
+      // available for non-streaming paths via brain.server.ts.
+      if (p.wire !== "openai") {
+        fallbackTrail.push({ provider: id, status: 0, error: "non-openai wire skipped in stream" });
+        continue;
+      }
       const apiKey = Deno.env.get(p.apiKeyEnv);
       if (!apiKey) {
         fallbackTrail.push({ provider: id, status: 0, error: `${p.apiKeyEnv} missing` });
