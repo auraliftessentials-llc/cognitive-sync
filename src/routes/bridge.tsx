@@ -57,10 +57,13 @@ function BridgeConsole() {
   const [loading, setLoading] = useState(true);
   const [pairing, setPairing] = useState<{ code: string; expires_at: string } | null>(null);
   const [name, setName] = useState("MacBook");
-  const [host, setHost] = useState("");
+  // Canonical sync endpoint — every device reports here regardless of which
+  // URL (preview / *.lovable.app / custom domain) the operator opens the PWA from.
+  const CANONICAL_HOST = "https://cognitivesync.io";
+  const [host, setHost] = useState(CANONICAL_HOST);
 
   useEffect(() => {
-    if (typeof window !== "undefined") setHost(window.location.origin);
+    setHost(CANONICAL_HOST);
   }, []);
 
   const refresh = async () => {
