@@ -108,6 +108,9 @@ function BridgeConsole() {
   };
 
   const daemonUrl = `${host}/api/public/bridge-daemon`;
+  const oneLineInstall = pairing
+    ? `curl -sSL "${host}/api/public/bridge-install?code=${pairing.code}" | bash`
+    : `curl -sSL "${host}/api/public/bridge-install" | bash`;
   const installCmd = `curl -sSL ${daemonUrl} -o merkabah-bridge.mjs`;
   const pairCmd = pairing ? `node merkabah-bridge.mjs pair ${pairing.code}` : "";
   const qrPayload = pairing ? JSON.stringify({ host, code: pairing.code }) : "";
@@ -148,9 +151,8 @@ function BridgeConsole() {
                 </Button>
                 <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside pt-2 border-t border-border/50">
                   <li>Click <em>Generate</em> — you'll get an 8-char code (10-min TTL).</li>
-                  <li>On your Mac, run the install command shown.</li>
-                  <li>Run <code className="text-primary">node merkabah-bridge.mjs pair &lt;CODE&gt;</code>.</li>
-                  <li>Then <code className="text-primary">node merkabah-bridge.mjs serve</code>.</li>
+                  <li>Paste the one-line install command into your Mac/Linux terminal.</li>
+                  <li>The daemon installs, pairs, and auto-launches at every login.</li>
                 </ol>
               </>
             ) : (
@@ -166,29 +168,40 @@ function BridgeConsole() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">1. Install on Mac</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    One-paste install (pair + auto-launch on login)
+                  </div>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 text-xs bg-muted/40 rounded px-2 py-1.5 font-mono truncate">{installCmd}</code>
-                    <Button size="icon" variant="outline" onClick={() => copy(installCmd)}>
+                    <code className="flex-1 text-xs bg-muted/40 rounded px-2 py-1.5 font-mono truncate" title={oneLineInstall}>
+                      {oneLineInstall}
+                    </code>
+                    <Button size="icon" variant="outline" onClick={() => copy(oneLineInstall, "Install command copied")}>
                       <Copy className="h-3.5 w-3.5" />
                     </Button>
                   </div>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    Paste in Terminal. Installs the daemon, pairs this device, and registers a LaunchAgent
+                    (macOS) or systemd unit (Linux) so it auto-starts at login and self-restarts on crash.
+                    Requires Node 18+.
+                  </p>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">2. Pair</div>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 text-xs bg-muted/40 rounded px-2 py-1.5 font-mono truncate">{pairCmd}</code>
-                    <Button size="icon" variant="outline" onClick={() => copy(pairCmd)}>
-                      <Copy className="h-3.5 w-3.5" />
-                    </Button>
+                <details className="text-xs border-t border-border/40 pt-3">
+                  <summary className="cursor-pointer text-muted-foreground hover:text-primary uppercase tracking-wider text-[10px]">
+                    Manual install (advanced)
+                  </summary>
+                  <div className="space-y-2 mt-3">
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-muted/40 rounded px-2 py-1.5 font-mono truncate">{installCmd}</code>
+                      <Button size="icon" variant="outline" onClick={() => copy(installCmd)}><Copy className="h-3.5 w-3.5" /></Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-muted/40 rounded px-2 py-1.5 font-mono truncate">{pairCmd}</code>
+                      <Button size="icon" variant="outline" onClick={() => copy(pairCmd)}><Copy className="h-3.5 w-3.5" /></Button>
+                    </div>
+                    <code className="block bg-muted/40 rounded px-2 py-1.5 font-mono">node merkabah-bridge.mjs serve</code>
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">3. Serve</div>
-                  <code className="block text-xs bg-muted/40 rounded px-2 py-1.5 font-mono">node merkabah-bridge.mjs serve</code>
-                </div>
+                </details>
 
                 <div className="flex gap-2">
                   <Button variant="ghost" size="sm" onClick={() => setPairing(null)} className="flex-1">

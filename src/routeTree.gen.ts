@@ -27,6 +27,7 @@ import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as HooksSyncGithubRouteImport } from './routes/hooks/sync-github'
 import { Route as HooksRunCliSchedulesRouteImport } from './routes/hooks/run-cli-schedules'
 import { Route as ApiZohoCallbackRouteImport } from './routes/api/zoho.callback'
+import { Route as ApiPublicBridgeInstallRouteImport } from './routes/api/public/bridge-install'
 import { Route as ApiPublicBridgeDaemonRouteImport } from './routes/api/public/bridge-daemon'
 import { Route as ApiCliStreamRouteImport } from './routes/api/cli.stream'
 import { Route as ApiCliSplatRouteImport } from './routes/api/cli.$'
@@ -122,6 +123,11 @@ const ApiZohoCallbackRoute = ApiZohoCallbackRouteImport.update({
   path: '/api/zoho/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicBridgeInstallRoute = ApiPublicBridgeInstallRouteImport.update({
+  id: '/api/public/bridge-install',
+  path: '/api/public/bridge-install',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicBridgeDaemonRoute = ApiPublicBridgeDaemonRouteImport.update({
   id: '/api/public/bridge-daemon',
   path: '/api/public/bridge-daemon',
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/api/cli/$': typeof ApiCliSplatRoute
   '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/public/bridge-daemon': typeof ApiPublicBridgeDaemonRoute
+  '/api/public/bridge-install': typeof ApiPublicBridgeInstallRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
 }
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/api/cli/$': typeof ApiCliSplatRoute
   '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/public/bridge-daemon': typeof ApiPublicBridgeDaemonRoute
+  '/api/public/bridge-install': typeof ApiPublicBridgeInstallRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
 }
@@ -213,6 +221,7 @@ export interface FileRoutesById {
   '/api/cli/$': typeof ApiCliSplatRoute
   '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/public/bridge-daemon': typeof ApiPublicBridgeDaemonRoute
+  '/api/public/bridge-install': typeof ApiPublicBridgeInstallRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
 }
@@ -239,6 +248,7 @@ export interface FileRouteTypes {
     | '/api/cli/$'
     | '/api/cli/stream'
     | '/api/public/bridge-daemon'
+    | '/api/public/bridge-install'
     | '/api/zoho/callback'
     | '/api/public/bridge/$'
   fileRoutesByTo: FileRoutesByTo
@@ -263,6 +273,7 @@ export interface FileRouteTypes {
     | '/api/cli/$'
     | '/api/cli/stream'
     | '/api/public/bridge-daemon'
+    | '/api/public/bridge-install'
     | '/api/zoho/callback'
     | '/api/public/bridge/$'
   id:
@@ -287,6 +298,7 @@ export interface FileRouteTypes {
     | '/api/cli/$'
     | '/api/cli/stream'
     | '/api/public/bridge-daemon'
+    | '/api/public/bridge-install'
     | '/api/zoho/callback'
     | '/api/public/bridge/$'
   fileRoutesById: FileRoutesById
@@ -312,6 +324,7 @@ export interface RootRouteChildren {
   ApiCliSplatRoute: typeof ApiCliSplatRoute
   ApiCliStreamRoute: typeof ApiCliStreamRoute
   ApiPublicBridgeDaemonRoute: typeof ApiPublicBridgeDaemonRoute
+  ApiPublicBridgeInstallRoute: typeof ApiPublicBridgeInstallRoute
   ApiZohoCallbackRoute: typeof ApiZohoCallbackRoute
   ApiPublicBridgeSplatRoute: typeof ApiPublicBridgeSplatRoute
 }
@@ -444,6 +457,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiZohoCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/bridge-install': {
+      id: '/api/public/bridge-install'
+      path: '/api/public/bridge-install'
+      fullPath: '/api/public/bridge-install'
+      preLoaderRoute: typeof ApiPublicBridgeInstallRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/bridge-daemon': {
       id: '/api/public/bridge-daemon'
       path: '/api/public/bridge-daemon'
@@ -496,6 +516,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCliSplatRoute: ApiCliSplatRoute,
   ApiCliStreamRoute: ApiCliStreamRoute,
   ApiPublicBridgeDaemonRoute: ApiPublicBridgeDaemonRoute,
+  ApiPublicBridgeInstallRoute: ApiPublicBridgeInstallRoute,
   ApiZohoCallbackRoute: ApiZohoCallbackRoute,
   ApiPublicBridgeSplatRoute: ApiPublicBridgeSplatRoute,
 }

@@ -148,30 +148,44 @@ async function cmdPair(code) {
 async function cmdServe() {
   const cfg = loadCfg();
   if (!cfg?.api_key) { console.error("Not paired. Run: merkabah-bridge pair <code>"); process.exit(1); }
-  console.log("merkabah-bridge serving for device", cfg.device_id);
-  console.log("Heartbeat every 30s. Offline events queue to", QUEUE);
-  let allowed = [];
-  let caps = [];
+  console.log("[" + new Date().toISOString() + "] merkabah-bridge serving for device " + cfg.device_id);
+  console.log("Heartbeat with adaptive backoff. Offline events queue to " + QUEUE);
+  let backoff = 30_000;       // healthy interval
+  const MIN = 5_000, MAX = 300_000;
+  let consecutiveErrors = 0;
+
   const beat = async () => {
+    const t0 = Date.now();
     try {
       const r = await request("POST", "/api/public/bridge/heartbeat", { hostname: os.hostname() }, cfg.api_key);
       if (r.status === 200 && r.body?.ok) {
-        allowed = r.body.allowed_roots || [];
-        caps = r.body.capabilities || [];
         const flushed = await flushQueue(cfg.api_key);
-        process.stdout.write("." + (flushed ? " (flushed " + flushed + ")\n" : ""));
-      } else if (r.status === 401) {
-        console.error("\n✗ Auth rejected. Re-pair with: merkabah-bridge pair <code>");
+        consecutiveErrors = 0;
+        backoff = 30_000;
+        const t = new Date().toISOString();
+        console.log("[" + t + "] heartbeat ok (" + (Date.now() - t0) + "ms)" + (flushed ? " · flushed " + flushed : ""));
+      } else if (r.status === 401 || r.status === 403) {
+        console.error("[" + new Date().toISOString() + "] auth rejected. Re-pair with: merkabah-bridge pair <code>");
         process.exit(1);
       } else {
-        process.stdout.write("?");
+        consecutiveErrors++;
+        backoff = Math.min(MAX, Math.max(MIN, backoff * 2));
+        console.warn("[" + new Date().toISOString() + "] heartbeat http " + r.status + " — backoff " + backoff + "ms");
       }
-    } catch {
-      process.stdout.write("x"); // offline
+    } catch (e) {
+      consecutiveErrors++;
+      backoff = Math.min(MAX, Math.max(MIN, backoff * 2));
+      console.warn("[" + new Date().toISOString() + "] heartbeat offline (" + (e && e.message || e) + ") — backoff " + backoff + "ms");
     }
+    setTimeout(beat, backoff);
   };
-  await beat();
-  setInterval(beat, 30_000);
+
+  // Process supervisor: catch unhandled rejections so the daemon doesn't die silently
+  process.on("unhandledRejection", (e) => console.error("[unhandledRejection]", e));
+  process.on("uncaughtException", (e) => console.error("[uncaughtException]", e));
+  process.on("SIGTERM", () => { console.log("SIGTERM — exiting"); process.exit(0); });
+
+  beat();
 }
 
 async function cmdLs(p) {
