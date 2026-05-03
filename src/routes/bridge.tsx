@@ -128,6 +128,10 @@ function BridgeConsole() {
             Pair your MacBook (or any Node-capable device) to give Merkabah OS sandboxed filesystem and shell access.
             Each device gets its own key; sandboxing is enforced by the local daemon.
           </p>
+          <div className="mt-2 inline-flex items-center gap-2 text-[10px] uppercase tracking-wider text-primary/80 font-mono">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+            Sync endpoint: {CANONICAL_HOST.replace("https://", "")}
+          </div>
         </div>
         <Button variant="outline" size="sm" onClick={refresh}>
           <RefreshCw className="h-4 w-4 mr-2" /> Refresh
