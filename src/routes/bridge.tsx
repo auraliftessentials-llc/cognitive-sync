@@ -108,6 +108,9 @@ function BridgeConsole() {
   };
 
   const daemonUrl = `${host}/api/public/bridge-daemon`;
+  const oneLineInstall = pairing
+    ? `curl -sSL "${host}/api/public/bridge-install?code=${pairing.code}" | bash`
+    : `curl -sSL "${host}/api/public/bridge-install" | bash`;
   const installCmd = `curl -sSL ${daemonUrl} -o merkabah-bridge.mjs`;
   const pairCmd = pairing ? `node merkabah-bridge.mjs pair ${pairing.code}` : "";
   const qrPayload = pairing ? JSON.stringify({ host, code: pairing.code }) : "";
