@@ -39,7 +39,7 @@ import os from "node:os";
 import https from "node:https";
 import { URL } from "node:url";
 
-const HOST = process.env.MERKABAH_HOST || "https://neural-guide-sync.lovable.app";
+const HOST = process.env.MERKABAH_HOST || "https://cognitivesync.io";
 const HOME = os.homedir();
 const DIR = path.join(HOME, ".merkabah");
 const CFG = path.join(DIR, "bridge.json");

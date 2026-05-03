@@ -57,10 +57,13 @@ function BridgeConsole() {
   const [loading, setLoading] = useState(true);
   const [pairing, setPairing] = useState<{ code: string; expires_at: string } | null>(null);
   const [name, setName] = useState("MacBook");
-  const [host, setHost] = useState("");
+  // Canonical sync endpoint — every device reports here regardless of which
+  // URL (preview / *.lovable.app / custom domain) the operator opens the PWA from.
+  const CANONICAL_HOST = "https://cognitivesync.io";
+  const [host, setHost] = useState(CANONICAL_HOST);
 
   useEffect(() => {
-    if (typeof window !== "undefined") setHost(window.location.origin);
+    setHost(CANONICAL_HOST);
   }, []);
 
   const refresh = async () => {
@@ -125,6 +128,10 @@ function BridgeConsole() {
             Pair your MacBook (or any Node-capable device) to give Merkabah OS sandboxed filesystem and shell access.
             Each device gets its own key; sandboxing is enforced by the local daemon.
           </p>
+          <div className="mt-2 inline-flex items-center gap-2 text-[10px] uppercase tracking-wider text-primary/80 font-mono">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+            Sync endpoint: {CANONICAL_HOST.replace("https://", "")}
+          </div>
         </div>
         <Button variant="outline" size="sm" onClick={refresh}>
           <RefreshCw className="h-4 w-4 mr-2" /> Refresh
