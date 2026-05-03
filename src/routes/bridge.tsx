@@ -151,9 +151,8 @@ function BridgeConsole() {
                 </Button>
                 <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside pt-2 border-t border-border/50">
                   <li>Click <em>Generate</em> — you'll get an 8-char code (10-min TTL).</li>
-                  <li>On your Mac, run the install command shown.</li>
-                  <li>Run <code className="text-primary">node merkabah-bridge.mjs pair &lt;CODE&gt;</code>.</li>
-                  <li>Then <code className="text-primary">node merkabah-bridge.mjs serve</code>.</li>
+                  <li>Paste the one-line install command into your Mac/Linux terminal.</li>
+                  <li>The daemon installs, pairs, and auto-launches at every login.</li>
                 </ol>
               </>
             ) : (
