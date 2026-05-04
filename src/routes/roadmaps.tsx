@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Sparkles, Map, Compass, Loader2 } from "lucide-react";
 import {
   assessSkills, generateRoadmap, listRoadmaps, getRoadmap,
-  getWeeklyInsights, updateProgress, reviseRoadmap,
+  getWeeklyInsights, updateProgress, reviseRoadmap, getRoadCard,
 } from "@/lib/roadmap.functions";
 
 export const Route = createFileRoute("/roadmaps")({
