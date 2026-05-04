@@ -12,7 +12,6 @@ import { Mic, MicOff, Loader2, Volume2, VolumeX, Send, Sparkles, Crown } from "l
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { commandRoute } from "@/lib/command-router.functions";
 import { routeWithRace } from "@/lib/route-with-race";
 import { speak, transcribe } from "@/lib/voice.functions";
 import { Link } from "@tanstack/react-router";
