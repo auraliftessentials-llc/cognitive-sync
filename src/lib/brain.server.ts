@@ -35,6 +35,11 @@ export type ProviderId =
   | "openai-direct"
   | "anthropic-direct"
   | "google-direct"
+  | "deepseek"
+  | "mistral"
+  | "groq"
+  | "together"
+  | "perplexity-llm"
   | "openrouter"
   | "lovable-openai"
   | "lovable-google";
@@ -115,6 +120,63 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
     // Gemini Pro: strong vision, long context, multimodal.
     strengths: { vision: 1, fast: 2, cheap: 2, chat: 3, reasoning: 3 },
   },
+  deepseek: {
+    id: "deepseek",
+    label: "DeepSeek V3 (direct)",
+    model: "deepseek/deepseek-chat",
+    endpoint: "https://api.deepseek.com/v1/chat/completions",
+    apiKeyEnv: "DEEPSEEK_API_KEY",
+    modelOnWire: "deepseek-chat",
+    supportsTools: true,
+    wireFormat: "openai",
+    strengths: { code: 2, reasoning: 3, cheap: 1, chat: 3 },
+  },
+  mistral: {
+    id: "mistral",
+    label: "Mistral Large (direct)",
+    model: "mistral/mistral-large-latest",
+    endpoint: "https://api.mistral.ai/v1/chat/completions",
+    apiKeyEnv: "MISTRAL_API_KEY",
+    modelOnWire: "mistral-large-latest",
+    supportsTools: true,
+    wireFormat: "openai",
+    strengths: { reasoning: 3, code: 3, chat: 3, tools: 3 },
+  },
+  groq: {
+    id: "groq",
+    label: "Groq (Llama 3.3 70B — ultra-fast)",
+    model: "groq/llama-3.3-70b-versatile",
+    endpoint: "https://api.groq.com/openai/v1/chat/completions",
+    apiKeyEnv: "GROQ_API_KEY",
+    modelOnWire: "llama-3.3-70b-versatile",
+    supportsTools: true,
+    wireFormat: "openai",
+    // Groq's edge: sub-second latency. Best for fast/voice/realtime.
+    strengths: { fast: 1, cheap: 2, chat: 3, tools: 4 },
+  },
+  together: {
+    id: "together",
+    label: "Together AI (Qwen / Llama / DeepSeek)",
+    model: "together/Qwen/Qwen2.5-72B-Instruct-Turbo",
+    endpoint: "https://api.together.xyz/v1/chat/completions",
+    apiKeyEnv: "TOGETHER_API_KEY",
+    modelOnWire: "Qwen/Qwen2.5-72B-Instruct-Turbo",
+    supportsTools: true,
+    wireFormat: "openai",
+    strengths: { code: 3, reasoning: 3, cheap: 2, chat: 3 },
+  },
+  "perplexity-llm": {
+    id: "perplexity-llm",
+    label: "Perplexity Sonar (web-grounded)",
+    model: "perplexity/sonar-pro",
+    endpoint: "https://api.perplexity.ai/chat/completions",
+    apiKeyEnv: "PERPLEXITY_API_KEY",
+    modelOnWire: "sonar-pro",
+    supportsTools: false,
+    wireFormat: "openai",
+    // Perplexity's edge: real-time web grounding for any query.
+    strengths: { reasoning: 4, chat: 3, fast: 3 },
+  },
   openrouter: {
     id: "openrouter",
     label: "OpenRouter (200+ models)",
@@ -163,6 +225,11 @@ export const DEFAULT_FALLBACK_CHAIN: ProviderId[] = [
   "openai-direct",
   "anthropic-direct",
   "google-direct",
+  "deepseek",
+  "mistral",
+  "groq",
+  "together",
+  "perplexity-llm",
   "openrouter",
   "lovable-openai",
   "lovable-google",
