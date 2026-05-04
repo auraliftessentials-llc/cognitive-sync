@@ -21,7 +21,15 @@ export type ToolName =
   | "cloudflare_list_dns"
   | "cloudflare_create_dns"
   | "cloudflare_purge_cache"
-  | "cloudflare_workers_ai";
+  | "cloudflare_workers_ai"
+  | "firecrawl_scrape"
+  | "firecrawl_search"
+  | "wikipedia_lookup"
+  | "arxiv_search"
+  | "duckduckgo_instant"
+  | "linear_list_teams"
+  | "linear_create_issue"
+  | "linear_list_issues";
 
 async function getValidToken(userId: string) {
   const { data: conn } = await supabaseAdmin
@@ -261,6 +269,148 @@ export async function executeTool(
       const j = await r.json();
       return { model, response: j.result?.response ?? j };
     }
+    case "firecrawl_scrape": {
+      const lovable = process.env.LOVABLE_API_KEY;
+      const fc = process.env.FIRECRAWL_API_KEY;
+      if (!lovable || !fc) throw new Error("Firecrawl not configured (need LOVABLE_API_KEY + FIRECRAWL_API_KEY)");
+      const r = await fetch("https://connector-gateway.lovable.dev/firecrawl/v2/scrape", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${lovable}`, "X-Connection-Api-Key": fc, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: String(args.url ?? ""),
+          formats: args.formats ?? ["markdown"],
+          onlyMainContent: args.onlyMainContent ?? true,
+        }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(`Firecrawl scrape ${r.status}: ${JSON.stringify(j).slice(0, 300)}`);
+      return j;
+    }
+    case "firecrawl_search": {
+      const lovable = process.env.LOVABLE_API_KEY;
+      const fc = process.env.FIRECRAWL_API_KEY;
+      if (!lovable || !fc) throw new Error("Firecrawl not configured");
+      const r = await fetch("https://connector-gateway.lovable.dev/firecrawl/v2/search", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${lovable}`, "X-Connection-Api-Key": fc, "Content-Type": "application/json" },
+        body: JSON.stringify({ query: String(args.query ?? ""), limit: args.limit ?? 10, tbs: args.tbs }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(`Firecrawl search ${r.status}: ${JSON.stringify(j).slice(0, 300)}`);
+      return j;
+    }
+    case "wikipedia_lookup": {
+      const lang = String(args.lang ?? "en");
+      const title = encodeURIComponent(String(args.title ?? args.query ?? ""));
+      if (!title) throw new Error("title or query required");
+      const r = await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${title}`, {
+        headers: { "User-Agent": "MerkabahOS/1.0" },
+      });
+      if (!r.ok) {
+        const s = await fetch(`https://${lang}.wikipedia.org/w/api.php?action=opensearch&format=json&limit=5&search=${title}`);
+        const sj = await s.json().catch(() => []);
+        return { matches: sj?.[1] ?? [], descriptions: sj?.[2] ?? [], urls: sj?.[3] ?? [] };
+      }
+      const j = await r.json();
+      return { title: j.title, extract: j.extract, url: j.content_urls?.desktop?.page, thumbnail: j.thumbnail?.source, lang };
+    }
+    case "arxiv_search": {
+      const query = encodeURIComponent(String(args.query ?? ""));
+      const max = Number(args.limit ?? 5);
+      if (!query) throw new Error("query required");
+      const r = await fetch(`http://export.arxiv.org/api/query?search_query=all:${query}&start=0&max_results=${max}&sortBy=submittedDate&sortOrder=descending`);
+      const xml = await r.text();
+      const entries = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].map((m) => {
+        const block = m[1];
+        const pick = (tag: string) => {
+          const mm = block.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`));
+          return mm ? mm[1].trim().replace(/\s+/g, " ") : null;
+        };
+        const linkMatch = block.match(/<link[^>]*href="([^"]+)"[^>]*rel="alternate"/);
+        return {
+          title: pick("title"),
+          summary: pick("summary"),
+          published: pick("published"),
+          authors: [...block.matchAll(/<author>\s*<name>([^<]+)<\/name>/g)].map((a) => a[1]),
+          url: linkMatch?.[1] ?? null,
+        };
+      });
+      return { results: entries };
+    }
+    case "duckduckgo_instant": {
+      const q = encodeURIComponent(String(args.query ?? ""));
+      const r = await fetch(`https://api.duckduckgo.com/?q=${q}&format=json&no_html=1&skip_disambig=1`);
+      const j = await r.json().catch(() => ({}));
+      return {
+        abstract: j.AbstractText, source: j.AbstractSource, url: j.AbstractURL, heading: j.Heading,
+        related: (j.RelatedTopics ?? []).slice(0, 5).map((t: any) => ({ text: t.Text, url: t.FirstURL })),
+      };
+    }
+    case "linear_list_teams": {
+      const lovable = process.env.LOVABLE_API_KEY;
+      const lin = process.env.LINEAR_API_KEY;
+      if (!lovable || !lin) throw new Error("Linear not configured");
+      const r = await fetch("https://connector-gateway.lovable.dev/linear/graphql", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${lovable}`, "X-Connection-Api-Key": lin, "Content-Type": "application/json" },
+        body: JSON.stringify({ query: `query { teams(first: 25) { nodes { id name key } } }` }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || j.errors) throw new Error(`Linear teams ${r.status}: ${JSON.stringify(j.errors ?? j).slice(0, 300)}`);
+      return j.data;
+    }
+    case "linear_create_issue": {
+      const lovable = process.env.LOVABLE_API_KEY;
+      const lin = process.env.LINEAR_API_KEY;
+      if (!lovable || !lin) throw new Error("Linear not configured");
+      let teamId: string | undefined = args.team_id;
+      if (!teamId) {
+        const tr = await fetch("https://connector-gateway.lovable.dev/linear/graphql", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${lovable}`, "X-Connection-Api-Key": lin, "Content-Type": "application/json" },
+          body: JSON.stringify({ query: `query { teams(first: 25) { nodes { id name key } } }` }),
+        });
+        const tj = await tr.json().catch(() => ({}));
+        const teams: any[] = tj?.data?.teams?.nodes ?? [];
+        const wantedKey = (args.team_key as string | undefined)?.toUpperCase();
+        teamId = wantedKey ? teams.find((t) => t.key === wantedKey)?.id : teams[0]?.id;
+        if (!teamId) throw new Error("No Linear team found — pass team_id or team_key");
+      }
+      const r = await fetch("https://connector-gateway.lovable.dev/linear/graphql", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${lovable}`, "X-Connection-Api-Key": lin, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `mutation Create($input: IssueCreateInput!) { issueCreate(input: $input) { success issue { id identifier title url } } }`,
+          variables: {
+            input: {
+              teamId,
+              title: String(args.title ?? "Untitled"),
+              description: args.description ? String(args.description) : undefined,
+              priority: typeof args.priority === "number" ? args.priority : undefined,
+            },
+          },
+        }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || j.errors) throw new Error(`Linear create ${r.status}: ${JSON.stringify(j.errors ?? j).slice(0, 300)}`);
+      return j.data?.issueCreate;
+    }
+    case "linear_list_issues": {
+      const lovable = process.env.LOVABLE_API_KEY;
+      const lin = process.env.LINEAR_API_KEY;
+      if (!lovable || !lin) throw new Error("Linear not configured");
+      const limit = Number(args.limit ?? 20);
+      const r = await fetch("https://connector-gateway.lovable.dev/linear/graphql", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${lovable}`, "X-Connection-Api-Key": lin, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `query { issues(first: ${limit}, orderBy: updatedAt) { nodes { id identifier title state { name } priority url updatedAt team { key } } } }`,
+        }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || j.errors) throw new Error(`Linear issues ${r.status}: ${JSON.stringify(j.errors ?? j).slice(0, 300)}`);
+      return j.data;
+    }
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -284,4 +434,12 @@ export const TOOL_SCHEMAS = [
   { type: "function", function: { name: "cloudflare_create_dns", description: "Create a DNS record on a Cloudflare zone.", parameters: { type: "object", properties: { zone_id: { type: "string" }, type: { type: "string" }, name: { type: "string" }, content: { type: "string" }, proxied: { type: "boolean" }, ttl: { type: "number" } }, required: ["zone_id","type","name","content"] } } },
   { type: "function", function: { name: "cloudflare_purge_cache", description: "Purge Cloudflare cache for a zone (all or specific URLs).", parameters: { type: "object", properties: { zone_id: { type: "string" }, urls: { type: "array", items: { type: "string" } } }, required: ["zone_id"] } } },
   { type: "function", function: { name: "cloudflare_workers_ai", description: "Run a prompt through a Cloudflare Workers AI model (default Llama 3.1 8B).", parameters: { type: "object", properties: { prompt: { type: "string" }, system: { type: "string" }, model: { type: "string" } }, required: ["prompt"] } } },
+  { type: "function", function: { name: "firecrawl_scrape", description: "Scrape one URL via Firecrawl. Returns clean markdown + metadata. Use for any specific page (article, docs, competitor landing).", parameters: { type: "object", properties: { url: { type: "string" }, formats: { type: "array", items: { type: "string" } }, onlyMainContent: { type: "boolean" } }, required: ["url"] } } },
+  { type: "function", function: { name: "firecrawl_search", description: "Web search via Firecrawl. Returns ranked results with titles + URLs (and content if scrapeOptions). Use when you need fresh links the user can click.", parameters: { type: "object", properties: { query: { type: "string" }, limit: { type: "number" }, tbs: { type: "string", description: "Time filter: qdr:h, qdr:d, qdr:w, qdr:m, qdr:y" } }, required: ["query"] } } },
+  { type: "function", function: { name: "wikipedia_lookup", description: "Free Wikipedia summary for a topic. Use for canonical definitions, biographies, established facts. No API key required.", parameters: { type: "object", properties: { title: { type: "string" }, query: { type: "string" }, lang: { type: "string", description: "ISO code, default 'en'" } } } } },
+  { type: "function", function: { name: "arxiv_search", description: "Search arXiv preprints — latest scientific papers (CS, physics, math, ML). Returns title, summary, authors, URL. Free, no key.", parameters: { type: "object", properties: { query: { type: "string" }, limit: { type: "number" } }, required: ["query"] } } },
+  { type: "function", function: { name: "duckduckgo_instant", description: "DuckDuckGo Instant Answer for quick factual lookups. Free, no key.", parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } } },
+  { type: "function", function: { name: "linear_list_teams", description: "List the operator's Linear teams (id, name, key).", parameters: { type: "object", properties: {} } } },
+  { type: "function", function: { name: "linear_list_issues", description: "List recent Linear issues across all teams.", parameters: { type: "object", properties: { limit: { type: "number" } } } } },
+  { type: "function", function: { name: "linear_create_issue", description: "Create a Linear issue. team_key (e.g. 'ENG') auto-resolves to teamId; falls back to first team if neither passed. Priority: 0=none, 1=urgent, 2=high, 3=medium, 4=low.", parameters: { type: "object", properties: { title: { type: "string" }, description: { type: "string" }, team_key: { type: "string" }, team_id: { type: "string" }, priority: { type: "number" } }, required: ["title"] } } },
 ] as const;

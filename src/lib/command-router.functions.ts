@@ -16,6 +16,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { callBrain, type BrainMessage, type TaskKind } from "./brain.server";
+import { executeTool, TOOL_SCHEMAS, type ToolName } from "./zoho-tools.server";
 
 type RouterIntent =
   | "code"
@@ -27,6 +28,8 @@ type RouterIntent =
   | "github"
   | "zoho"
   | "cloudflare"
+  | "linear"
+  | "knowledge"
   | "chat"
   | "magic.next"
   | "magic.do"
@@ -67,11 +70,19 @@ function classify(input: string): { intent: RouterIntent; taskKind: TaskKind; hi
     return { intent: "github", taskKind: "tools", hint: "GitHub keyword" };
   if (/(zoho|crm|deals|leads|pipeline|contacts)/.test(t))
     return { intent: "zoho", taskKind: "tools", hint: "Zoho/CRM keyword" };
-  if (/(cloudflare|cf zones?|purge cache|workers ai|wrangler)/.test(t))
+  if (/(cloudflare|cf zones?|purge cache|workers ai|wrangler|dns record)/.test(t))
     return { intent: "cloudflare", taskKind: "tools", hint: "Cloudflare keyword" };
 
+  // Linear issue filing
+  if (/(file (an? )?(issue|bug|ticket|task)|create (an? )?(issue|bug|ticket)|linear|open (an? )?(issue|bug|ticket))/.test(t))
+    return { intent: "linear", taskKind: "tools", hint: "Linear / issue filing" };
+
+  // Free-knowledge lookups (Wikipedia, arXiv, DuckDuckGo)
+  if (/(wikipedia|wiki |wiki:|arxiv|paper on|preprint|encyclopedia)/.test(t))
+    return { intent: "knowledge", taskKind: "fast", hint: "Free knowledge sources" };
+
   // research / live web
-  if (/(latest|today|news|search|research|look up|current price|stock|weather|sports|score)/.test(t))
+  if (/(latest|today|news|search|research|look up|current price|stock|weather|sports|score|scrape|crawl)/.test(t))
     return { intent: "research", taskKind: "fast", hint: "Live-web research signal" };
 
   // code
@@ -110,7 +121,8 @@ export const commandRoute = createServerFn({ method: "POST" })
       forceTaskKind?: TaskKind;
     }) => input,
   )
-  .handler(async ({ data }): Promise<CommandRouterResult> => {
+  .handler(async ({ data, context }): Promise<CommandRouterResult> => {
+    const { userId } = context as any;
     const prompt = (data.prompt ?? "").trim();
     if (!prompt) {
       return {
@@ -135,8 +147,12 @@ export const commandRoute = createServerFn({ method: "POST" })
       enrichedPrompt = `The Master wants Zoho/CRM data. Use zoho_* tools or recommend /zoho deals|leads|contacts|tasks|mail. Request: ${prompt}`;
     } else if (c.intent === "cloudflare") {
       enrichedPrompt = `The Master wants Cloudflare action. Use cloudflare_* tools. Request: ${prompt}`;
+    } else if (c.intent === "linear") {
+      enrichedPrompt = `The Master wants to file or look up a Linear issue. Use linear_create_issue (auto-resolves team) or linear_list_issues. Extract a clean title and optional description from the request. After creating, reply with the issue identifier (e.g. ENG-42) and URL. Request: ${prompt}`;
+    } else if (c.intent === "knowledge") {
+      enrichedPrompt = `The Master wants free-knowledge lookup. Use wikipedia_lookup for canonical/established facts, arxiv_search for scientific papers, or duckduckgo_instant for quick definitions. Cite the source URL. Request: ${prompt}`;
     } else if (c.intent === "research") {
-      enrichedPrompt = `The Master needs LIVE information. Use web_research / Perplexity. Cite sources. Request: ${prompt}`;
+      enrichedPrompt = `The Master needs LIVE information. Use web_research (Perplexity, grounded), or firecrawl_search for fresh links, or firecrawl_scrape for a specific page. Cite sources. Request: ${prompt}`;
     } else if (c.intent === "cli") {
       enrichedPrompt = `The Master wants to run something on the Super Agent CLI. Describe the command you'd run, then explain which agent should execute it. Request: ${prompt}`;
     } else if (c.intent === "magic.next") {
@@ -183,7 +199,66 @@ Acknowledge with: "BRAIN ONLINE · {your model id} · standing by." then execute
         ? "x-ai/grok-4"
         : undefined;
 
+    // Tool-heavy intents get a real tool-calling loop (max 3 rounds) so the
+    // brain can actually file Linear issues, scrape pages, etc. — not just
+    // describe them. Other intents go through plain callBrain (faster, no
+    // tools needed).
+    const toolIntents = new Set<RouterIntent>(["linear", "knowledge", "research", "cloudflare", "zoho", "github"]);
+    const useTools = toolIntents.has(c.intent);
+
     try {
+      if (useTools) {
+        const toolCalls: { name: string; ok: boolean; error?: string }[] = [];
+        let finalProvider = "";
+        let finalModel = "";
+        let finalFallbacks: { provider: string; status: number; error: string }[] = [];
+        let output = "";
+        for (let round = 0; round < 3; round++) {
+          const res = await callBrain({
+            messages,
+            tools: TOOL_SCHEMAS as any,
+            tool_choice: "auto",
+            preferredModel,
+            taskKind,
+            timeoutMs: 20_000,
+            reasoning_effort: "low",
+          });
+          finalProvider = res.provider;
+          finalModel = res.model;
+          if (res.fallbacks.length) finalFallbacks = res.fallbacks;
+          const choice = res.message;
+          if (choice.tool_calls?.length) {
+            messages.push({ role: "assistant", content: choice.content ?? "", tool_calls: choice.tool_calls });
+            for (const tc of choice.tool_calls as any[]) {
+              const name = tc.function?.name as ToolName;
+              let parsed: any = {};
+              try { parsed = JSON.parse(tc.function?.arguments ?? "{}"); } catch { /* tolerate */ }
+              try {
+                const result = await executeTool(userId, name, parsed);
+                toolCalls.push({ name, ok: true });
+                messages.push({ role: "tool", tool_call_id: tc.id, name, content: JSON.stringify(result).slice(0, 8000) });
+              } catch (e: any) {
+                const error = e?.message ?? String(e);
+                toolCalls.push({ name, ok: false, error });
+                messages.push({ role: "tool", tool_call_id: tc.id, name, content: JSON.stringify({ error }) });
+              }
+            }
+            continue;
+          }
+          output = choice.content ?? "";
+          break;
+        }
+        return {
+          ok: true,
+          intent: c.intent,
+          provider: finalProvider,
+          model: finalModel,
+          fallbacks: finalFallbacks,
+          output: output || "(no reply)",
+          hint: `${c.hint} → tools[${toolCalls.map((t) => `${t.name}${t.ok ? "" : "✗"}`).join(",") || "none"}]`,
+        };
+      }
+
       const res = await callBrain({
         messages,
         taskKind,
