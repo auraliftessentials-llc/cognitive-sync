@@ -293,22 +293,53 @@ export function CEOVoiceHub() {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setAutoSpeak((v) => !v)}
-              className="h-7 text-[10px]"
-              title="Toggle voice reply"
-            >
-              {autoSpeak ? <Volume2 className="h-3 w-3 mr-1" /> : <VolumeX className="h-3 w-3 mr-1" />}
-              {autoSpeak ? "Voice on" : "Voice off"}
-            </Button>
-            <Link to="/console" search={{ agent: undefined, cmd: undefined }} className="text-[10px] text-brand-blue hover:underline">
-              Full console →
-            </Link>
-          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setAutoSpeak((v) => !v)}
+            className="h-7 text-[10px]"
+            title="Toggle voice reply"
+          >
+            {autoSpeak ? <Volume2 className="h-3 w-3 mr-1" /> : <VolumeX className="h-3 w-3 mr-1" />}
+            {autoSpeak ? "Voice on" : "Voice off"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={runVoiceQA}
+            disabled={qaRunning}
+            className="h-7 text-[10px] border-brand-cyan/60 text-brand-cyan hover:bg-brand-cyan/10"
+            title="End-to-end voice QA: mic → STT → brain → TTS"
+          >
+            {qaRunning ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+            Voice QA
+          </Button>
+          <Link to="/console" search={{ agent: undefined, cmd: undefined }} className="text-[10px] text-brand-blue hover:underline">
+            Full console →
+          </Link>
         </div>
+      </div>
 
+      {qaSteps && (
+        <div className="mb-3 rounded-lg border border-brand-cyan/40 bg-brand-cyan/5 p-3 text-xs space-y-1">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-brand-cyan mb-1">Voice QA</div>
+          {qaSteps.map((s, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <span className={
+                s.status === "ok" ? "text-brand-green" :
+                s.status === "fail" ? "text-destructive" :
+                "text-muted-foreground"
+              }>
+                {s.status === "ok" ? "✓" : s.status === "fail" ? "✕" : "…"}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div>{s.label}</div>
+                {s.detail && <div className="text-[10px] text-muted-foreground truncate">{s.detail}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
         {/* Big push-to-talk */}
         <div className="flex items-center gap-3 mb-4">
           <button
