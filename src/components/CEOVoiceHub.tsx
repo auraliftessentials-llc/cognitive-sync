@@ -171,6 +171,99 @@ export function CEOVoiceHub() {
     setPhase("idle");
   }, []);
 
+  const runVoiceQA = useCallback(async () => {
+    if (qaRunning) return;
+    setQaRunning(true);
+    const steps: QAStep[] = [
+      { label: "Microphone access", status: "pending" },
+      { label: "Record 3s clip", status: "pending" },
+      { label: "Transcribe (ElevenLabs Scribe)", status: "pending" },
+      { label: "Brain reply (xAI → fallbacks)", status: "pending" },
+      { label: "TTS playback (ElevenLabs)", status: "pending" },
+    ];
+    setQaSteps([...steps]);
+    const update = (i: number, s: QAStep) => {
+      steps[i] = s;
+      setQaSteps([...steps]);
+    };
+
+    let stream: MediaStream | null = null;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      update(0, { label: steps[0].label, status: "ok" });
+    } catch (e: any) {
+      update(0, { label: steps[0].label, status: "fail", detail: e?.message ?? "denied" });
+      setQaRunning(false);
+      return;
+    }
+
+    const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+      ? "audio/webm;codecs=opus"
+      : MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "";
+    let blob: Blob;
+    try {
+      const rec = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      const chunks: Blob[] = [];
+      rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+      const done = new Promise<Blob>((resolve) => {
+        rec.onstop = () => resolve(new Blob(chunks, { type: mimeType || "audio/webm" }));
+      });
+      rec.start();
+      await new Promise((r) => setTimeout(r, 3000));
+      rec.stop();
+      blob = await done;
+      stream.getTracks().forEach((t) => t.stop());
+      update(1, { label: steps[1].label, status: "ok", detail: `${(blob.size / 1024).toFixed(1)} KB` });
+    } catch (e: any) {
+      update(1, { label: steps[1].label, status: "fail", detail: e?.message });
+      stream?.getTracks().forEach((t) => t.stop());
+      setQaRunning(false);
+      return;
+    }
+
+    let text = "";
+    try {
+      const buf = await blob.arrayBuffer();
+      let bin = "";
+      const u8 = new Uint8Array(buf);
+      for (let i = 0; i < u8.length; i++) bin += String.fromCharCode(u8[i]);
+      const b64 = btoa(bin);
+      const tr = await transcribe({ data: { audio_base64: b64, mime_type: blob.type } });
+      if (!tr.ok) throw new Error(tr.error || "transcription failed");
+      text = tr.text || "(silence)";
+      update(2, { label: steps[2].label, status: "ok", detail: `"${text.slice(0, 80)}"` });
+    } catch (e: any) {
+      update(2, { label: steps[2].label, status: "fail", detail: e?.message });
+      setQaRunning(false);
+      return;
+    }
+
+    let reply = "";
+    try {
+      const res = await commandRoute({ data: { prompt: text || "Say hello and confirm voice QA passed." } });
+      if (!res.ok) throw new Error(res.output || "brain failed");
+      reply = res.output || "OK";
+      update(3, { label: steps[3].label, status: "ok", detail: `${res.intent} · ${reply.slice(0, 60)}…` });
+    } catch (e: any) {
+      update(3, { label: steps[3].label, status: "fail", detail: e?.message });
+      setQaRunning(false);
+      return;
+    }
+
+    try {
+      const tts = await speak({ data: { text: reply.length > 400 ? reply.slice(0, 400) + "…" : reply } });
+      if (!tts.ok || !tts.audio_base64) throw new Error(tts.error || "tts failed");
+      await playAudio(tts.audio_base64);
+      update(4, { label: steps[4].label, status: "ok", detail: `${tts.bytes ?? 0} bytes` });
+      toast.success("Voice QA passed end-to-end ✓");
+    } catch (e: any) {
+      update(4, { label: steps[4].label, status: "fail", detail: e?.message });
+    } finally {
+      setQaRunning(false);
+    }
+  }, [qaRunning, playAudio]);
+
+
   const busy = phase === "thinking" || phase === "speaking";
   const phaseColor =
     phase === "listening" ? "text-brand-cyan" :
