@@ -867,6 +867,122 @@ export type Database = {
           },
         ]
       }
+      roadmap_progress: {
+        Row: {
+          created_at: string
+          id: string
+          mastery_level: number
+          notes: string | null
+          roadmap_id: string
+          status: string
+          time_spent_minutes: number
+          topic_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mastery_level?: number
+          notes?: string | null
+          roadmap_id: string
+          status?: string
+          time_spent_minutes?: number
+          topic_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mastery_level?: number
+          notes?: string | null
+          roadmap_id?: string
+          status?: string
+          time_spent_minutes?: number
+          topic_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roadmap_progress_roadmap_id_fkey"
+            columns: ["roadmap_id"]
+            isOneToOne: false
+            referencedRelation: "roadmaps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roadmaps: {
+        Row: {
+          created_at: string
+          data: Json
+          duration_weeks: number
+          goal: string | null
+          id: string
+          merkaba_level: string
+          title: string
+          updated_at: string
+          user_id: string
+          weekly_hours: number
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          duration_weeks?: number
+          goal?: string | null
+          id?: string
+          merkaba_level?: string
+          title: string
+          updated_at?: string
+          user_id: string
+          weekly_hours?: number
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          duration_weeks?: number
+          goal?: string | null
+          id?: string
+          merkaba_level?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          weekly_hours?: number
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
+      skill_assessments: {
+        Row: {
+          answers: Json
+          created_at: string
+          id: string
+          overall_level: string | null
+          result: Json
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          id?: string
+          overall_level?: string | null
+          result?: Json
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          id?: string
+          overall_level?: string | null
+          result?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           created_at: string
