@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { Merkabah } from "@/components/Merkabah";
 import { supabase } from "@/integrations/supabase/client";
 import { consoleRun } from "@/lib/console.functions";
+import { routeWithRace } from "@/lib/route-with-race";
 import { refreshBrainHealth } from "@/lib/health.functions";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
