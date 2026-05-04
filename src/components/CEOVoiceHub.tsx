@@ -46,6 +46,8 @@ export function CEOVoiceHub() {
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [agentLabel, setAgentLabel] = useState<string>("CEO Grok");
+  const [qaSteps, setQaSteps] = useState<QAStep[] | null>(null);
+  const [qaRunning, setQaRunning] = useState(false);
 
   const recRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
