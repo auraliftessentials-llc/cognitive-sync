@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { CEOVoiceHub } from "@/components/CEOVoiceHub";
 import { TrialBanner } from "@/components/TrialBanner";
 import { FrontierIntelPanel } from "@/components/FrontierIntelPanel";
+import { MissionControlPanel } from "@/components/MissionControl";
 
 export const Route = createFileRoute("/dashboard")({
   component: () => (
@@ -88,6 +89,8 @@ function Dashboard() {
       </div>
 
       <TrialBanner />
+
+      <div className="my-6"><MissionControlPanel /></div>
 
       <CEOVoiceHub />
 
