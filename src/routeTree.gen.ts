@@ -18,6 +18,7 @@ import { Route as LegalRouteImport } from './routes/legal'
 import { Route as GithubRouteImport } from './routes/github'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ConsoleRouteImport } from './routes/console'
+import { Route as CommandsRouteImport } from './routes/commands'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as BridgeRouteImport } from './routes/bridge'
 import { Route as BillingRouteImport } from './routes/billing'
@@ -86,6 +87,11 @@ const DashboardRoute = DashboardRouteImport.update({
 const ConsoleRoute = ConsoleRouteImport.update({
   id: '/console',
   path: '/console',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommandsRoute = CommandsRouteImport.update({
+  id: '/commands',
+  path: '/commands',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChatRoute = ChatRouteImport.update({
@@ -222,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/billing': typeof BillingRoute
   '/bridge': typeof BridgeRoute
   '/chat': typeof ChatRoute
+  '/commands': typeof CommandsRoute
   '/console': typeof ConsoleRoute
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
@@ -257,6 +264,7 @@ export interface FileRoutesByTo {
   '/billing': typeof BillingRoute
   '/bridge': typeof BridgeRoute
   '/chat': typeof ChatRoute
+  '/commands': typeof CommandsRoute
   '/console': typeof ConsoleRoute
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
@@ -293,6 +301,7 @@ export interface FileRoutesById {
   '/billing': typeof BillingRoute
   '/bridge': typeof BridgeRoute
   '/chat': typeof ChatRoute
+  '/commands': typeof CommandsRoute
   '/console': typeof ConsoleRoute
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
@@ -330,6 +339,7 @@ export interface FileRouteTypes {
     | '/billing'
     | '/bridge'
     | '/chat'
+    | '/commands'
     | '/console'
     | '/dashboard'
     | '/github'
@@ -365,6 +375,7 @@ export interface FileRouteTypes {
     | '/billing'
     | '/bridge'
     | '/chat'
+    | '/commands'
     | '/console'
     | '/dashboard'
     | '/github'
@@ -400,6 +411,7 @@ export interface FileRouteTypes {
     | '/billing'
     | '/bridge'
     | '/chat'
+    | '/commands'
     | '/console'
     | '/dashboard'
     | '/github'
@@ -436,6 +448,7 @@ export interface RootRouteChildren {
   BillingRoute: typeof BillingRoute
   BridgeRoute: typeof BridgeRoute
   ChatRoute: typeof ChatRoute
+  CommandsRoute: typeof CommandsRoute
   ConsoleRoute: typeof ConsoleRoute
   DashboardRoute: typeof DashboardRoute
   GithubRoute: typeof GithubRoute
@@ -527,6 +540,13 @@ declare module '@tanstack/react-router' {
       path: '/console'
       fullPath: '/console'
       preLoaderRoute: typeof ConsoleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/commands': {
+      id: '/commands'
+      path: '/commands'
+      fullPath: '/commands'
+      preLoaderRoute: typeof CommandsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chat': {
@@ -708,6 +728,7 @@ const rootRouteChildren: RootRouteChildren = {
   BillingRoute: BillingRoute,
   BridgeRoute: BridgeRoute,
   ChatRoute: ChatRoute,
+  CommandsRoute: CommandsRoute,
   ConsoleRoute: ConsoleRoute,
   DashboardRoute: DashboardRoute,
   GithubRoute: GithubRoute,

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Brain, FolderGit2, MessageSquare, Sparkles, User, LogOut, Github, Crown, Building2, ChevronDown, Bot, Terminal, ShieldCheck, Wifi, Map } from "lucide-react";
+import { Brain, FolderGit2, MessageSquare, Sparkles, User, LogOut, Github, Crown, Building2, ChevronDown, Bot, Terminal, ShieldCheck, Wifi, Map, ScrollText } from "lucide-react";
 import { Merkabah } from "@/components/Merkabah";
 import { useAuth } from "@/lib/auth-context";
 import { useWorkspace } from "@/lib/workspace-context";
@@ -22,6 +22,7 @@ import { primePuter } from "@/lib/puter-brain";
 const navItems = [
   { to: "/dashboard", label: "Pulse", icon: Brain },
   { to: "/console", label: "Console", icon: Terminal },
+  { to: "/commands", label: "Command Log", icon: ScrollText },
   { to: "/terminal", label: "Web Term", icon: Terminal },
   { to: "/agents", label: "Agents", icon: Bot },
   { to: "/projects", label: "Library", icon: FolderGit2 },

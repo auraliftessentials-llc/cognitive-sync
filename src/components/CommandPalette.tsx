@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { Merkabah } from "@/components/Merkabah";
 import { routeWithRace } from "@/lib/route-with-race";
+import { runMerkabahCommand } from "@/lib/merkabah-command.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 
 type Action = {
@@ -32,6 +34,7 @@ export function CommandPalette() {
   const [routing, setRouting] = useState(false);
   const [reply, setReply] = useState<{ intent: string; provider: string; source: string; text: string } | null>(null);
   const nav = useNavigate();
+  const logCommand = useServerFn(runMerkabahCommand);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -63,6 +66,14 @@ export function CommandPalette() {
       const res = await routeWithRace({ prompt });
       setReply({ intent: res.intent, provider: res.provider, source: res.source, text: res.output });
       if (!res.ok) toast.error(res.output);
+      // Fire-and-forget: persist to merkabah_commands log so /commands sees it.
+      void logCommand({
+        data: {
+          command: prompt,
+          source: "ui",
+          metadata: { winner: res.provider, race_source: res.source, intent: res.intent },
+        },
+      }).catch(() => { /* non-blocking */ });
     } catch (e: any) {
       toast.error(e?.message ?? "Router failed");
     } finally {
