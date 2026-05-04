@@ -13,8 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { commandRoute } from "@/lib/command-router.functions";
-import { speak } from "@/lib/voice.functions";
+import { speak, transcribe } from "@/lib/voice.functions";
 import { Link } from "@tanstack/react-router";
+
+type QAStep = { label: string; status: "pending" | "ok" | "fail"; detail?: string };
 
 type Phase = "idle" | "listening" | "thinking" | "speaking" | "error";
 
