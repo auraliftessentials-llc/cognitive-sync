@@ -87,7 +87,11 @@ function Dashboard() {
         <QuickAction to="/suggestions" icon={Sparkles} title="Next moves" subtitle="AI-generated, ranked, actionable" />
       </div>
 
+      <TrialBanner />
+
       <CEOVoiceHub />
+
+      <FrontierIntelPanel />
 
       <div className="grid lg:grid-cols-2 gap-6">
         <section className="cathedral-card rounded-xl p-5">
