@@ -33,6 +33,7 @@ import { Route as ApiPublicBridgeInstallRouteImport } from './routes/api/public/
 import { Route as ApiPublicBridgeDaemonRouteImport } from './routes/api/public/bridge-daemon'
 import { Route as ApiCliStreamRouteImport } from './routes/api/cli.stream'
 import { Route as ApiCliSplatRouteImport } from './routes/api/cli.$'
+import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicHooksFrontierScanRouteImport } from './routes/api/public/hooks/frontier-scan'
 import { Route as ApiPublicBridgeSplatRouteImport } from './routes/api/public/bridge.$'
 
@@ -156,6 +157,12 @@ const ApiCliSplatRoute = ApiCliSplatRouteImport.update({
   path: '/api/cli/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPaymentsWebhookRoute =
+  ApiPublicPaymentsWebhookRouteImport.update({
+    id: '/api/public/payments/webhook',
+    path: '/api/public/payments/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksFrontierScanRoute =
   ApiPublicHooksFrontierScanRouteImport.update({
     id: '/api/public/hooks/frontier-scan',
@@ -195,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
   '/api/public/hooks/frontier-scan': typeof ApiPublicHooksFrontierScanRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -223,6 +231,7 @@ export interface FileRoutesByTo {
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
   '/api/public/hooks/frontier-scan': typeof ApiPublicHooksFrontierScanRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -252,6 +261,7 @@ export interface FileRoutesById {
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
   '/api/public/hooks/frontier-scan': typeof ApiPublicHooksFrontierScanRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -282,6 +292,7 @@ export interface FileRouteTypes {
     | '/api/zoho/callback'
     | '/api/public/bridge/$'
     | '/api/public/hooks/frontier-scan'
+    | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -310,6 +321,7 @@ export interface FileRouteTypes {
     | '/api/zoho/callback'
     | '/api/public/bridge/$'
     | '/api/public/hooks/frontier-scan'
+    | '/api/public/payments/webhook'
   id:
     | '__root__'
     | '/'
@@ -338,6 +350,7 @@ export interface FileRouteTypes {
     | '/api/zoho/callback'
     | '/api/public/bridge/$'
     | '/api/public/hooks/frontier-scan'
+    | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -367,6 +380,7 @@ export interface RootRouteChildren {
   ApiZohoCallbackRoute: typeof ApiZohoCallbackRoute
   ApiPublicBridgeSplatRoute: typeof ApiPublicBridgeSplatRoute
   ApiPublicHooksFrontierScanRoute: typeof ApiPublicHooksFrontierScanRoute
+  ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -539,6 +553,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCliSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/payments/webhook': {
+      id: '/api/public/payments/webhook'
+      path: '/api/public/payments/webhook'
+      fullPath: '/api/public/payments/webhook'
+      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/frontier-scan': {
       id: '/api/public/hooks/frontier-scan'
       path: '/api/public/hooks/frontier-scan'
@@ -583,6 +604,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiZohoCallbackRoute: ApiZohoCallbackRoute,
   ApiPublicBridgeSplatRoute: ApiPublicBridgeSplatRoute,
   ApiPublicHooksFrontierScanRoute: ApiPublicHooksFrontierScanRoute,
+  ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
