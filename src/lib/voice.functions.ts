@@ -90,7 +90,8 @@ export const transcribe = createServerFn({ method: "POST" })
     if (!bytes.byteLength) return { ok: false, error: "Empty audio buffer" };
 
     const fd = new FormData();
-    const blob = new Blob([bytes], { type: data.mime_type });
+    const ab = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+    const blob = new Blob([ab], { type: data.mime_type });
     const ext = data.mime_type.includes("mp4") ? "mp4"
       : data.mime_type.includes("wav") ? "wav"
       : data.mime_type.includes("mpeg") ? "mp3"
