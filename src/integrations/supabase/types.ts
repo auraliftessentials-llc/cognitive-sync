@@ -1204,6 +1204,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_vault: {
+        Row: {
+          auth_tag: string
+          ciphertext: string
+          created_at: string
+          hint: string | null
+          id: string
+          iv: string
+          key_name: string
+          last_used_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auth_tag: string
+          ciphertext: string
+          created_at?: string
+          hint?: string | null
+          id?: string
+          iv: string
+          key_name: string
+          last_used_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auth_tag?: string
+          ciphertext?: string
+          created_at?: string
+          hint?: string | null
+          id?: string
+          iv?: string
+          key_name?: string
+          last_used_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       workspace_invites: {
         Row: {
           accepted_at: string | null
