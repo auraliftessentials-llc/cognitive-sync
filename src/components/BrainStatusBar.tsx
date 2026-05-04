@@ -6,9 +6,10 @@
 import { useEffect, useState, useTransition } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getBrainHealthCached, refreshBrainHealth, type BrainHealthSnapshot } from "@/lib/health.functions";
-import { RefreshCw, Activity } from "lucide-react";
+import { RefreshCw, Activity, ChevronDown, ChevronUp } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { RaceTelemetryPanel } from "@/components/RaceTelemetryPanel";
 
 const POLL_MS = 60_000;
 
@@ -23,6 +24,7 @@ export function BrainStatusBar() {
   const [snap, setSnap] = useState<BrainHealthSnapshot | null>(null);
   const [pending, startTransition] = useTransition();
   const [refreshing, setRefreshing] = useState(false);
+  const [showRace, setShowRace] = useState(false);
   const cached = useServerFn(getBrainHealthCached);
   const refresh = useServerFn(refreshBrainHealth);
 
