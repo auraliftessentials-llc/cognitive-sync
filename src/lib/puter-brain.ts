@@ -188,9 +188,11 @@ function resolveWireModel(m: string): string {
  * Tries top-tier first, degrades to fast/cheap, ends on OpenRouter auto-router.
  */
 export const DEFAULT_PUTER_CHAIN: (PuterModelId | string)[] = [
+  // Operator pinned: Grok 4 leads, then fast variants, then frontier peers.
+  "x-ai/grok-4",
+  "x-ai/grok-4-fast",
   "openai/gpt-5",
   "anthropic/claude-sonnet-4-5",
-  "x-ai/grok-4",
   "google/gemini-3-pro-preview",
   "google/gemini-2.5-pro",
   "deepseek/deepseek-chat",

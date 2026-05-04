@@ -15,6 +15,7 @@
  * Used by: CEOVoiceHub, CommandPalette, Console (when raceMode), Chat.
  */
 import { commandRoute, type CommandRouterResult } from "./command-router.functions";
+import { directGrok } from "./direct-brain.functions";
 import { raceBrains, type RaceCompetitor, type RaceMode } from "./brain-race";
 import { checkPuterAvailability, recordPuterFailure, recordPuterSuccess } from "./puter-health";
 import {
@@ -95,14 +96,19 @@ export async function routeWithRace(args: RouteWithRaceArgs): Promise<RoutedRace
 
   // If user pinned a provider, that one gets zero delay; everyone else gets +400ms.
   // Otherwise the auto-preferred provider gets a 200ms head start over the rest.
+  // Operator preference: xAI Grok 4 + Puter run head-to-head with zero delay.
+  // The tool-aware router gets a small head start (it handles intent routing).
   const headStart = (label: string): number => {
     if (pinned) return label === pinned ? 0 : 400;
     if (auto && label === auto) return 0;
-    if (label === "merkabah-router") return 0;            // server is the safety net
+    if (label === "xai-grok-4") return 0;       // pinned server brain
+    if (label === "puter-delayed") return 0;    // pinned client brain
+    if (label === "merkabah-router") return 0;  // tool-router safety net
     return serverHeadStartMs;
   };
 
   const competitors: RaceCompetitor[] = [
+    // ── Peer 1: tool-aware router (handles Linear/Cloudflare/etc intents).
     {
       kind: "server",
       label: "merkabah-router",
@@ -113,7 +119,6 @@ export async function routeWithRace(args: RouteWithRaceArgs): Promise<RoutedRace
           data: { prompt, history: history as any },
         });
         if (!r.ok) throw new Error(r.output || "router failed");
-        // Encode intent + hint into model field for downstream recovery.
         return {
           text: r.output,
           model: `${r.model}|${r.intent}|${r.hint ?? ""}`,
@@ -121,18 +126,37 @@ export async function routeWithRace(args: RouteWithRaceArgs): Promise<RoutedRace
         };
       },
     },
+    // ── Peer 2: pinned xAI Grok 4 (operator's preferred server brain).
+    //    Bypasses the intent classifier for raw-speed chat answers.
+    {
+      kind: "server",
+      label: "xai-grok-4",
+      call: async (signal): Promise<{ text: string; model: string; provider: string }> => {
+        const delay = headStart("xai-grok-4");
+        if (delay > 0) await wait(delay, signal);
+        const r = await directGrok({ data: { messages: messages as any } });
+        if (!r.ok || !r.text) throw new Error("grok direct failed");
+        return {
+          text: r.text,
+          model: `${r.model}|chat|`,
+          provider: r.provider,
+        };
+      },
+    },
   ];
 
+  // ── Peer 3: Puter.js client-side brain (free, unlimited, multi-model).
   if (puterHealth.available) {
     competitors.push({
-      kind: "server", // wrapped as server-style competitor with custom delay
+      kind: "server",
       label: "puter-delayed",
       call: async (signal): Promise<{ text: string; model: string; provider: string }> => {
         const delay = headStart("puter-delayed");
         if (delay > 0) await wait(delay, signal);
         try {
           const { callPuter } = await import("./puter-brain");
-          const p = await callPuter({ messages });
+          // Operator preference: race Grok 4 on Puter too for symmetry.
+          const p = await callPuter({ messages, model: "x-ai/grok-4" });
           recordPuterSuccess();
           return { text: p.text, model: p.model, provider: "puter" };
         } catch (e: any) {
