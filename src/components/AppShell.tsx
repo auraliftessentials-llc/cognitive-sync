@@ -39,6 +39,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const nav2 = useNavigate();
   const { signOut, user, isSuperAdmin, isAdmin } = useAuth();
 
+  // Warm Puter SDK in background so the first race doesn't pay the load cost.
+  useEffect(() => { primePuter(); }, []);
+
   return (
     <div className="min-h-screen flex">
       <CommandPalette />
