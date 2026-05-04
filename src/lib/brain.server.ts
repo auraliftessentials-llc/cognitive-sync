@@ -35,6 +35,11 @@ export type ProviderId =
   | "openai-direct"
   | "anthropic-direct"
   | "google-direct"
+  | "deepseek"
+  | "mistral"
+  | "groq"
+  | "together"
+  | "perplexity-llm"
   | "openrouter"
   | "lovable-openai"
   | "lovable-google";
