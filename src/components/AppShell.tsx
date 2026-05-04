@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Brain, FolderGit2, MessageSquare, Sparkles, User, LogOut, Github, Crown, Building2, ChevronDown, Bot, Terminal, ShieldCheck, Wifi } from "lucide-react";
+import { Brain, FolderGit2, MessageSquare, Sparkles, User, LogOut, Github, Crown, Building2, ChevronDown, Bot, Terminal, ShieldCheck, Wifi, Map } from "lucide-react";
 import { Merkabah } from "@/components/Merkabah";
 import { useAuth } from "@/lib/auth-context";
 import { useWorkspace } from "@/lib/workspace-context";
@@ -24,6 +24,7 @@ const navItems = [
   { to: "/agents", label: "Agents", icon: Bot },
   { to: "/projects", label: "Library", icon: FolderGit2 },
   { to: "/suggestions", label: "Moves", icon: Sparkles },
+  { to: "/roadmaps", label: "Roadmaps", icon: Map },
   { to: "/chat", label: "Brain", icon: MessageSquare },
   { to: "/github", label: "GitHub", icon: Github },
   { to: "/bridge", label: "Bridge", icon: Wifi },
