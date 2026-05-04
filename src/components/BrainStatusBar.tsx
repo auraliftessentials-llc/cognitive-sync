@@ -116,6 +116,19 @@ export function BrainStatusBar() {
             );
           })}
         </div>
+
+        <button
+          onClick={() => setShowRace((v) => !v)}
+          className="mt-2 w-full flex items-center justify-between text-[9px] uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition border-t border-border/40 pt-2"
+        >
+          <span>Race Telemetry</span>
+          {showRace ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+        </button>
+        {showRace && (
+          <div className="mt-2">
+            <RaceTelemetryPanel />
+          </div>
+        )}
       </div>
     </TooltipProvider>
   );
