@@ -620,6 +620,87 @@ export type Database = {
         }
         Relationships: []
       }
+      frontier_intel: {
+        Row: {
+          category: string
+          discovered_at: string
+          id: string
+          impact_score: number
+          raw: Json
+          source: string
+          summary: string
+          tags: string[]
+          title: string
+          url: string | null
+        }
+        Insert: {
+          category: string
+          discovered_at?: string
+          id?: string
+          impact_score?: number
+          raw?: Json
+          source: string
+          summary: string
+          tags?: string[]
+          title: string
+          url?: string | null
+        }
+        Update: {
+          category?: string
+          discovered_at?: string
+          id?: string
+          impact_score?: number
+          raw?: Json
+          source?: string
+          summary?: string
+          tags?: string[]
+          title?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
+      infra_resources: {
+        Row: {
+          created_at: string
+          endpoint: string | null
+          id: string
+          kind: string
+          last_checked_at: string | null
+          metadata: Json
+          metrics: Json
+          name: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint?: string | null
+          id?: string
+          kind: string
+          last_checked_at?: string | null
+          metadata?: Json
+          metrics?: Json
+          name: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string | null
+          id?: string
+          kind?: string
+          last_checked_at?: string | null
+          metadata?: Json
+          metrics?: Json
+          name?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       key_rotations: {
         Row: {
           created_at: string
@@ -786,6 +867,51 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          id: string
+          payment_method_attached: boolean
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tier: Database["public"]["Enums"]["plan_tier"]
+          trial_ends_at: string
+          trial_started_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          payment_method_attached?: boolean
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["plan_tier"]
+          trial_ends_at?: string
+          trial_started_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          payment_method_attached?: boolean
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["plan_tier"]
+          trial_ends_at?: string
+          trial_started_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       suggestions: {
         Row: {
           body: string
@@ -829,6 +955,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      usage_events: {
+        Row: {
+          cost_usd: number | null
+          created_at: string
+          id: string
+          latency_ms: number | null
+          model: string
+          provider: string
+          task_kind: string | null
+          tokens_in: number | null
+          tokens_out: number | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          cost_usd?: number | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          model: string
+          provider: string
+          task_kind?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          cost_usd?: number | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          model?: string
+          provider?: string
+          task_kind?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: []
       }
       user_feature_overrides: {
         Row: {
@@ -1103,6 +1271,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      has_active_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1130,6 +1299,12 @@ export type Database = {
     }
     Enums: {
       app_role: "super_admin" | "admin" | "user"
+      plan_tier:
+        | "free_trial"
+        | "operator"
+        | "architect"
+        | "sovereign"
+        | "lifetime"
       workspace_role: "owner" | "admin" | "manager" | "member"
     }
     CompositeTypes: {
@@ -1259,6 +1434,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "admin", "user"],
+      plan_tier: [
+        "free_trial",
+        "operator",
+        "architect",
+        "sovereign",
+        "lifetime",
+      ],
       workspace_role: ["owner", "admin", "manager", "member"],
     },
   },
