@@ -23,7 +23,7 @@ export const Route = createFileRoute("/api/public/hooks/brain-probe")({
           try {
             const res = await callBrain({
               messages: [{ role: "user", content: "Reply with the single word: pong" }],
-              preferredModel: p.defaultModel,
+              preferredModel: p.model,
               timeoutMs: 8000,
             });
             results.push({
