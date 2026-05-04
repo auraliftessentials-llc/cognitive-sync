@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Brain, Plus, Send } from "lucide-react";
 import { chatWithBrain } from "@/lib/ai.functions";
+import { routeWithRace } from "@/lib/route-with-race";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/chat")({
@@ -54,10 +55,42 @@ function Chat() {
     const text = input.trim();
     setInput("");
     setSending(true);
-    // Optimistic
+    // Optimistic user bubble
     setMessages((m) => [...m, { id: "tmp-u", role: "user", content: text, created_at: new Date().toISOString() }]);
+
+    // Build short history for the race peer (server persistence handles its own).
+    const recent = messages.slice(-8).map((m: any) => ({ role: m.role, content: m.content }));
+
+    // Race the client-side peer for INSTANT optimistic display while the
+    // server function runs persistence + full-context retrieval in parallel.
+    const racePromise = routeWithRace({
+      prompt: text,
+      history: recent as any,
+      // Chat doesn't need server tool-calling for most prompts → give Puter
+      // an even chance (no head start) so the user sees a reply ASAP.
+      serverHeadStartMs: 0,
+    }).catch(() => null);
+
+    const persistPromise = chatWithBrain({ data: { conversationId: activeId, message: text } });
+
     try {
-      await chatWithBrain({ data: { conversationId: activeId, message: text } });
+      const race = await racePromise;
+      if (race?.ok && race.output) {
+        // Show optimistic assistant reply tagged so we can replace it on persist.
+        setMessages((m) => [
+          ...m.filter((x) => x.id !== "tmp-a"),
+          {
+            id: "tmp-a",
+            role: "assistant",
+            content: race.output,
+            created_at: new Date().toISOString(),
+            _optimistic: true,
+            _source: race.source,
+            _provider: race.provider,
+          },
+        ]);
+      }
+      await persistPromise;
       await loadMessages();
       // Update title from first message
       const c = convos.find((c) => c.id === activeId);
@@ -68,7 +101,7 @@ function Chat() {
       }
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to send");
-      setMessages((m) => m.filter((x) => x.id !== "tmp-u"));
+      setMessages((m) => m.filter((x) => x.id !== "tmp-u" && x.id !== "tmp-a"));
     } finally {
       setSending(false);
     }
