@@ -37,6 +37,7 @@ import { Route as ApiCliStreamRouteImport } from './routes/api/cli.stream'
 import { Route as ApiCliSplatRouteImport } from './routes/api/cli.$'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicHooksFrontierScanRouteImport } from './routes/api/public/hooks/frontier-scan'
+import { Route as ApiPublicHooksBrainProbeRouteImport } from './routes/api/public/hooks/brain-probe'
 import { Route as ApiPublicHooksAutoReviseRoadmapsRouteImport } from './routes/api/public/hooks/auto-revise-roadmaps'
 import { Route as ApiPublicBridgeSplatRouteImport } from './routes/api/public/bridge.$'
 
@@ -182,6 +183,12 @@ const ApiPublicHooksFrontierScanRoute =
     path: '/api/public/hooks/frontier-scan',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksBrainProbeRoute =
+  ApiPublicHooksBrainProbeRouteImport.update({
+    id: '/api/public/hooks/brain-probe',
+    path: '/api/public/hooks/brain-probe',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksAutoReviseRoadmapsRoute =
   ApiPublicHooksAutoReviseRoadmapsRouteImport.update({
     id: '/api/public/hooks/auto-revise-roadmaps',
@@ -223,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/share/roadmap/$token': typeof ShareRoadmapTokenRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
   '/api/public/hooks/auto-revise-roadmaps': typeof ApiPublicHooksAutoReviseRoadmapsRoute
+  '/api/public/hooks/brain-probe': typeof ApiPublicHooksBrainProbeRoute
   '/api/public/hooks/frontier-scan': typeof ApiPublicHooksFrontierScanRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -255,6 +263,7 @@ export interface FileRoutesByTo {
   '/share/roadmap/$token': typeof ShareRoadmapTokenRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
   '/api/public/hooks/auto-revise-roadmaps': typeof ApiPublicHooksAutoReviseRoadmapsRoute
+  '/api/public/hooks/brain-probe': typeof ApiPublicHooksBrainProbeRoute
   '/api/public/hooks/frontier-scan': typeof ApiPublicHooksFrontierScanRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -288,6 +297,7 @@ export interface FileRoutesById {
   '/share/roadmap/$token': typeof ShareRoadmapTokenRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
   '/api/public/hooks/auto-revise-roadmaps': typeof ApiPublicHooksAutoReviseRoadmapsRoute
+  '/api/public/hooks/brain-probe': typeof ApiPublicHooksBrainProbeRoute
   '/api/public/hooks/frontier-scan': typeof ApiPublicHooksFrontierScanRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -322,6 +332,7 @@ export interface FileRouteTypes {
     | '/share/roadmap/$token'
     | '/api/public/bridge/$'
     | '/api/public/hooks/auto-revise-roadmaps'
+    | '/api/public/hooks/brain-probe'
     | '/api/public/hooks/frontier-scan'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -354,6 +365,7 @@ export interface FileRouteTypes {
     | '/share/roadmap/$token'
     | '/api/public/bridge/$'
     | '/api/public/hooks/auto-revise-roadmaps'
+    | '/api/public/hooks/brain-probe'
     | '/api/public/hooks/frontier-scan'
     | '/api/public/payments/webhook'
   id:
@@ -386,6 +398,7 @@ export interface FileRouteTypes {
     | '/share/roadmap/$token'
     | '/api/public/bridge/$'
     | '/api/public/hooks/auto-revise-roadmaps'
+    | '/api/public/hooks/brain-probe'
     | '/api/public/hooks/frontier-scan'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
@@ -419,6 +432,7 @@ export interface RootRouteChildren {
   ShareRoadmapTokenRoute: typeof ShareRoadmapTokenRoute
   ApiPublicBridgeSplatRoute: typeof ApiPublicBridgeSplatRoute
   ApiPublicHooksAutoReviseRoadmapsRoute: typeof ApiPublicHooksAutoReviseRoadmapsRoute
+  ApiPublicHooksBrainProbeRoute: typeof ApiPublicHooksBrainProbeRoute
   ApiPublicHooksFrontierScanRoute: typeof ApiPublicHooksFrontierScanRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
@@ -621,6 +635,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksFrontierScanRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/brain-probe': {
+      id: '/api/public/hooks/brain-probe'
+      path: '/api/public/hooks/brain-probe'
+      fullPath: '/api/public/hooks/brain-probe'
+      preLoaderRoute: typeof ApiPublicHooksBrainProbeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/auto-revise-roadmaps': {
       id: '/api/public/hooks/auto-revise-roadmaps'
       path: '/api/public/hooks/auto-revise-roadmaps'
@@ -667,6 +688,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShareRoadmapTokenRoute: ShareRoadmapTokenRoute,
   ApiPublicBridgeSplatRoute: ApiPublicBridgeSplatRoute,
   ApiPublicHooksAutoReviseRoadmapsRoute: ApiPublicHooksAutoReviseRoadmapsRoute,
+  ApiPublicHooksBrainProbeRoute: ApiPublicHooksBrainProbeRoute,
   ApiPublicHooksFrontierScanRoute: ApiPublicHooksFrontierScanRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
