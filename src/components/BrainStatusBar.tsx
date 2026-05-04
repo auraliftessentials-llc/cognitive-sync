@@ -10,6 +10,7 @@ import { RefreshCw, Activity, ChevronDown, ChevronUp } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { RaceTelemetryPanel } from "@/components/RaceTelemetryPanel";
+import { LiveRacePanel } from "@/components/LiveRacePanel";
 
 const POLL_MS = 60_000;
 
@@ -115,6 +116,10 @@ export function BrainStatusBar() {
               </Tooltip>
             );
           })}
+        </div>
+
+        <div className="mt-2 border-t border-border/40 pt-2">
+          <LiveRacePanel />
         </div>
 
         <button
