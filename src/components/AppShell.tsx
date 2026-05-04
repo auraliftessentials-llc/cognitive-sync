@@ -24,6 +24,7 @@ const navItems = [
   { to: "/agents", label: "Agents", icon: Bot },
   { to: "/projects", label: "Library", icon: FolderGit2 },
   { to: "/suggestions", label: "Moves", icon: Sparkles },
+  { to: "/roadmaps", label: "Roadmaps", icon: Map },
   { to: "/chat", label: "Brain", icon: MessageSquare },
   { to: "/github", label: "GitHub", icon: Github },
   { to: "/bridge", label: "Bridge", icon: Wifi },
