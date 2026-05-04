@@ -57,7 +57,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
-      line_items: [{ price: data.priceId, quantity: 1 }],
+      line_items: [{ price: stripePriceId, quantity: 1 }],
       payment_method_collection: "always",
       subscription_data: {
         trial_period_days: 3,
