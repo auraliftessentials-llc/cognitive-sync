@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { commandRoute } from "@/lib/command-router.functions";
+import { routeWithRace } from "@/lib/route-with-race";
 import { speak, transcribe } from "@/lib/voice.functions";
 import { Link } from "@tanstack/react-router";
 
@@ -86,10 +87,11 @@ export function CEOVoiceHub() {
       setReply("");
       setPhase("thinking");
       try {
-        // Unified Command Router — classifies intent, picks best brain, falls
-        // back across all your keys (xAI → OpenAI → Claude → Gemini → Lovable).
-        const res = await commandRoute({ data: { prompt } });
-        setAgentLabel(`MERKABAH · ${res.intent}`);
+        // Race the server router against Puter peers — fastest valid response wins.
+        // Server gets a head start so tool-using intents (Linear, Cloudflare, etc.)
+        // stay on the server path; Puter takes over instantly if server is slow/down.
+        const res = await routeWithRace({ prompt });
+        setAgentLabel(`MERKABAH · ${res.intent} · ${res.source}`);
         const out = res.output ?? "";
         setReply(out);
         if (!res.ok) {
@@ -242,10 +244,10 @@ export function CEOVoiceHub() {
 
     let reply = "";
     try {
-      const res = await commandRoute({ data: { prompt: text || "Say hello and confirm voice QA passed." } });
+      const res = await routeWithRace({ prompt: text || "Say hello and confirm voice QA passed." });
       if (!res.ok) throw new Error(res.output || "brain failed");
       reply = res.output || "OK";
-      update(3, { label: steps[3].label, status: "ok", detail: `${res.intent} · ${reply.slice(0, 60)}…` });
+      update(3, { label: steps[3].label, status: "ok", detail: `${res.intent} · ${res.source} · ${reply.slice(0, 60)}…` });
     } catch (e: any) {
       update(3, { label: steps[3].label, status: "fail", detail: e?.message });
       setQaRunning(false);
