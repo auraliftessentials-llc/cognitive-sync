@@ -43,7 +43,9 @@ export type ProviderId =
   | "perplexity-llm"
   | "openrouter"
   | "lovable-openai"
-  | "lovable-google";
+  | "lovable-google"
+  // Dynamically registered Gemini direct variants — `google-<model-wire-name>`.
+  | `google-${string}`;
 
 /** API request/response shape — providers diverge here. */
 export type WireFormat = "openai" | "anthropic" | "gemini";
