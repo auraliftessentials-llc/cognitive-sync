@@ -19,6 +19,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ConsoleRouteImport } from './routes/console'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as BridgeRouteImport } from './routes/bridge'
+import { Route as BillingRouteImport } from './routes/billing'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -83,6 +84,11 @@ const ChatRoute = ChatRouteImport.update({
 const BridgeRoute = BridgeRouteImport.update({
   id: '/bridge',
   path: '/bridge',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BillingRoute = BillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -167,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/agents': typeof AgentsRoute
   '/auth': typeof AuthRoute
+  '/billing': typeof BillingRoute
   '/bridge': typeof BridgeRoute
   '/chat': typeof ChatRoute
   '/console': typeof ConsoleRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/agents': typeof AgentsRoute
   '/auth': typeof AuthRoute
+  '/billing': typeof BillingRoute
   '/bridge': typeof BridgeRoute
   '/chat': typeof ChatRoute
   '/console': typeof ConsoleRoute
@@ -222,6 +230,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/agents': typeof AgentsRoute
   '/auth': typeof AuthRoute
+  '/billing': typeof BillingRoute
   '/bridge': typeof BridgeRoute
   '/chat': typeof ChatRoute
   '/console': typeof ConsoleRoute
@@ -251,6 +260,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/agents'
     | '/auth'
+    | '/billing'
     | '/bridge'
     | '/chat'
     | '/console'
@@ -278,6 +288,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/agents'
     | '/auth'
+    | '/billing'
     | '/bridge'
     | '/chat'
     | '/console'
@@ -305,6 +316,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/agents'
     | '/auth'
+    | '/billing'
     | '/bridge'
     | '/chat'
     | '/console'
@@ -333,6 +345,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AgentsRoute: typeof AgentsRoute
   AuthRoute: typeof AuthRoute
+  BillingRoute: typeof BillingRoute
   BridgeRoute: typeof BridgeRoute
   ChatRoute: typeof ChatRoute
   ConsoleRoute: typeof ConsoleRoute
@@ -426,6 +439,13 @@ declare module '@tanstack/react-router' {
       path: '/bridge'
       fullPath: '/bridge'
       preLoaderRoute: typeof BridgeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/billing': {
+      id: '/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof BillingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -541,6 +561,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AgentsRoute: AgentsRoute,
   AuthRoute: AuthRoute,
+  BillingRoute: BillingRoute,
   BridgeRoute: BridgeRoute,
   ChatRoute: ChatRoute,
   ConsoleRoute: ConsoleRoute,
