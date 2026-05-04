@@ -290,6 +290,9 @@ type CallOptions = {
   exclude?: ProviderId[];
   /** Hard timeout per provider, ms. Default 45s. */
   timeoutMs?: number;
+  /** Optional metering context — when present, usage_events row is written. */
+  userId?: string;
+  workspaceId?: string | null;
 };
 
 export type BrainResponse = {
@@ -496,9 +499,26 @@ export async function callBrain(opts: CallOptions): Promise<BrainResponse> {
 
   for (const id of chain) {
     const p = PROVIDERS[id];
+    const t0 = Date.now();
     const res = await callProvider(p, opts);
     if (res.ok) {
       const message = res.data.choices?.[0]?.message ?? { role: "assistant", content: "" };
+      // Fire-and-forget usage metering
+      if (opts.userId) {
+        const usage = res.data.usage ?? {};
+        void import("./usage-meter.server").then((m) =>
+          m.recordUsage({
+            userId: opts.userId!,
+            workspaceId: opts.workspaceId ?? null,
+            provider: p.id,
+            model: p.model,
+            taskKind: opts.taskKind,
+            tokensIn: usage.prompt_tokens ?? usage.input_tokens ?? 0,
+            tokensOut: usage.completion_tokens ?? usage.output_tokens ?? 0,
+            latencyMs: Date.now() - t0,
+          }),
+        );
+      }
       return { provider: p.id, model: p.model, raw: res.data, message, fallbacks };
     }
     fallbacks.push({ provider: p.id, status: res.status, error: res.error });

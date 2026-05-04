@@ -8,20 +8,20 @@ import { CreditCard, Crown, ShieldCheck, Zap, Infinity as InfinityIcon } from "l
 import { Button } from "@/components/ui/button";
 
 const TIERS = [
-  { id: "operator", name: "Operator", price: "$49/mo", tag: "Solo founders", features: [
+  { id: "operator",  priceId: "operator_monthly",  name: "Operator",  price: "$49/mo",  tag: "Solo founders", features: [
     "Universal AI Router (12+ providers)", "Merkaba Link cross-device sync",
     "Mission Control dashboard", "Mac Bridge daemon", "100k AI tokens / day",
   ]},
-  { id: "architect", name: "Architect", price: "$199/mo", tag: "Power operators", features: [
+  { id: "architect", priceId: "architect_monthly", name: "Architect", price: "$199/mo", tag: "Power operators", features: [
     "Everything in Operator", "Self-Evolving Intelligence Core (15-min scans)",
     "Specialist agents (CFO-Grok, Legal-Claude)", "Workspace + 5 seats",
     "1M AI tokens / day", "Priority routing",
   ]},
-  { id: "sovereign", name: "Sovereign", price: "$999/mo", tag: "Enterprise", features: [
+  { id: "sovereign", priceId: "sovereign_monthly", name: "Sovereign", price: "$999/mo", tag: "Enterprise", features: [
     "Everything in Architect", "Unlimited tokens (fair use)", "Dedicated cluster region",
     "SSO + SAML", "God-tier infrastructure control", "White-glove onboarding",
   ]},
-];
+] as const;
 
 export const Route = createFileRoute("/billing")({
   head: () => ({ meta: [{ title: "Billing — Cognitive Sync" }] }),
@@ -32,15 +32,29 @@ export const Route = createFileRoute("/billing")({
 
 function Billing() {
   const fn = useServerFn(getAccessState);
+  const checkoutFn = useServerFn(createCheckoutSession);
+  const portalFn = useServerFn(createPortalSession);
   const [s, setS] = useState<AccessState | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
 
-  useEffect(() => {
-    fn().then(setS).catch(() => {});
-  }, [fn]);
+  useEffect(() => { fn().then(setS).catch(() => {}); }, [fn]);
 
-  if (!s) {
-    return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
-  }
+  const choose = async (priceId: string) => {
+    setBusy(priceId);
+    try {
+      const r = await checkoutFn({ data: { priceId: priceId as any, returnUrl: window.location.origin } });
+      if (r.skipped) { toast.success("Lifetime access — no checkout needed."); return; }
+      if (r.url) window.location.href = r.url;
+    } catch (e: any) { toast.error(e?.message ?? "Checkout failed"); }
+    finally { setBusy(null); }
+  };
+
+  const portal = async () => {
+    try { const r = await portalFn(); if (r.url) window.location.href = r.url; }
+    catch (e: any) { toast.error(e?.message ?? "Portal unavailable"); }
+  };
+
+  if (!s) return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
 
   return (
     <div className="mx-auto max-w-5xl p-6 space-y-8">
@@ -95,15 +109,20 @@ function Billing() {
             </ul>
             <Button
               className="mt-5 w-full"
-              disabled={s.isSuperAdmin}
-              onClick={() => alert("Stripe checkout will be wired in next phase. Plan: " + t.id)}
+              disabled={s.isSuperAdmin || busy === t.priceId}
+              onClick={() => choose(t.priceId)}
             >
               {s.isSuperAdmin ? "Lifetime granted" :
-               s.tier === t.id ? "Current plan" : `Choose ${t.name}`}
+               s.tier === t.id ? "Current plan" :
+               busy === t.priceId ? "Opening checkout…" : `Choose ${t.name}`}
             </Button>
           </div>
         ))}
       </div>
+
+      {!s.isSuperAdmin && s.paymentMethodAttached && (
+        <Button variant="outline" onClick={portal}>Manage subscription</Button>
+      )}
 
       <p className="text-xs text-muted-foreground">
         Payments flow to Auralift Essentials LLC. See <Link to="/legal" className="underline">Legal &amp; IP</Link>.
