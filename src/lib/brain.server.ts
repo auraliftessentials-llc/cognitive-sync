@@ -43,7 +43,9 @@ export type ProviderId =
   | "perplexity-llm"
   | "openrouter"
   | "lovable-openai"
-  | "lovable-google";
+  | "lovable-google"
+  // Dynamically registered Gemini direct variants — `google-<model-wire-name>`.
+  | `google-${string}`;
 
 /** API request/response shape — providers diverge here. */
 export type WireFormat = "openai" | "anthropic" | "gemini";
@@ -248,6 +250,64 @@ export const DEFAULT_FALLBACK_CHAIN: ProviderId[] = [
   "lovable-openai",
   "lovable-google",
 ];
+
+/**
+ * Extra Gemini models served direct via Google AI Studio (GEMINI_API_KEY).
+ * Each becomes its own provider id `google-<wireName>` and a model id
+ * `google/<wireName>` so callers can target them via preferredModel.
+ *
+ * Strength bands:
+ *   pro     → reasoning/code/vision tier
+ *   flash   → fast/chat tier
+ *   lite    → cheap/bulk tier
+ */
+type GeminiVariantTier = "pro" | "flash" | "lite";
+const GEMINI_DIRECT_MODELS: { wire: string; tier: GeminiVariantTier; label: string }[] = [
+  { wire: "gemini-3.1-pro-preview",            tier: "pro",   label: "Gemini 3.1 Pro (preview)" },
+  { wire: "gemini-3-pro-preview",              tier: "pro",   label: "Gemini 3 Pro (preview)" },
+  { wire: "gemini-3-flash-preview",            tier: "flash", label: "Gemini 3 Flash (preview)" },
+  { wire: "gemini-3.1-flash-lite-preview",     tier: "lite",  label: "Gemini 3.1 Flash Lite (preview)" },
+  { wire: "gemini-2.5-pro",                    tier: "pro",   label: "Gemini 2.5 Pro" },
+  { wire: "gemini-2.5-pro-preview",            tier: "pro",   label: "Gemini 2.5 Pro (preview)" },
+  { wire: "gemini-2.5-pro-preview-05-06",      tier: "pro",   label: "Gemini 2.5 Pro (preview 05-06)" },
+  { wire: "gemini-2.5-flash",                  tier: "flash", label: "Gemini 2.5 Flash" },
+  { wire: "gemini-2.5-flash-preview-09-2025",  tier: "flash", label: "Gemini 2.5 Flash (preview 09-2025)" },
+  { wire: "gemini-2.5-flash-lite",             tier: "lite",  label: "Gemini 2.5 Flash Lite" },
+  { wire: "gemini-2.5-flash-lite-preview-09-2025", tier: "lite", label: "Gemini 2.5 Flash Lite (preview 09-2025)" },
+  { wire: "gemini-2.0-flash",                  tier: "flash", label: "Gemini 2.0 Flash" },
+  { wire: "gemini-2.0-flash-001",              tier: "flash", label: "Gemini 2.0 Flash 001" },
+  { wire: "gemini-2.0-flash-lite",             tier: "lite",  label: "Gemini 2.0 Flash Lite" },
+  { wire: "gemini-2.0-flash-lite-001",         tier: "lite",  label: "Gemini 2.0 Flash Lite 001" },
+];
+
+const GEMINI_TIER_STRENGTHS: Record<GeminiVariantTier, BrainProvider["strengths"]> = {
+  pro:   { reasoning: 2, vision: 1, code: 3, chat: 3 },
+  flash: { fast: 1, chat: 2, cheap: 3, vision: 3 },
+  lite:  { cheap: 1, fast: 2, chat: 4 },
+};
+
+for (const v of GEMINI_DIRECT_MODELS) {
+  const id = `google-${v.wire}` as ProviderId;
+  // Skip if already registered (e.g. google-direct uses gemini-2.5-pro endpoint).
+  if ((PROVIDERS as Record<string, BrainProvider>)[id]) continue;
+  (PROVIDERS as Record<string, BrainProvider>)[id] = {
+    id,
+    label: `${v.label} (Google direct)`,
+    model: `google/${v.wire}`,
+    endpoint: `https://generativelanguage.googleapis.com/v1beta/models/${v.wire}:generateContent`,
+    apiKeyEnv: "GEMINI_API_KEY",
+    modelOnWire: v.wire,
+    supportsTools: true,
+    wireFormat: "gemini",
+    strengths: GEMINI_TIER_STRENGTHS[v.tier],
+  };
+  // Insert into the default chain right after `google-direct` so direct Gemini
+  // variants are tried before DeepSeek/Mistral/etc when the primary fails.
+  const anchor = DEFAULT_FALLBACK_CHAIN.indexOf("google-direct");
+  if (anchor >= 0 && !DEFAULT_FALLBACK_CHAIN.includes(id)) {
+    DEFAULT_FALLBACK_CHAIN.splice(anchor + 1, 0, id);
+  }
+}
 
 export type BrainStatus = "ok" | "degraded" | "down" | "unconfigured";
 
