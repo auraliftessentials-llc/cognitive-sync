@@ -6,6 +6,8 @@ import { AppShell } from "@/components/AppShell";
 import { getAccessState, type AccessState } from "@/lib/subscription.functions";
 import { CreditCard, Crown, ShieldCheck, Zap, Infinity as InfinityIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { createCheckoutSession, createPortalSession } from "@/lib/checkout.functions";
 
 const TIERS = [
   { id: "operator",  priceId: "operator_monthly",  name: "Operator",  price: "$49/mo",  tag: "Solo founders", features: [

@@ -35,6 +35,12 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
     const email = user?.email;
 
     const stripe = createStripeClient("sandbox");
+
+    // Resolve human-readable priceId -> real Stripe price via lookup_keys
+    const prices = await stripe.prices.list({ lookup_keys: [data.priceId], limit: 1 });
+    if (!prices.data.length) throw new Error(`Price ${data.priceId} not found in Stripe`);
+    const stripePriceId = prices.data[0].id;
+
     let customerId = userRow?.stripe_customer_id ?? null;
     if (!customerId) {
       const customer = await stripe.customers.create({
@@ -51,7 +57,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
-      line_items: [{ price: data.priceId, quantity: 1 }],
+      line_items: [{ price: stripePriceId, quantity: 1 }],
       payment_method_collection: "always",
       subscription_data: {
         trial_period_days: 3,
