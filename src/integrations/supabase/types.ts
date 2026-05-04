@@ -731,6 +731,51 @@ export type Database = {
         }
         Relationships: []
       }
+      merkabah_commands: {
+        Row: {
+          command: string
+          created_at: string
+          error: string | null
+          id: string
+          latency_ms: number | null
+          metadata: Json
+          result: Json | null
+          source: string
+          status: string
+          updated_at: string
+          user_id: string
+          winner: string | null
+        }
+        Insert: {
+          command: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json
+          result?: Json | null
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          winner?: string | null
+        }
+        Update: {
+          command?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json
+          result?: Json | null
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          winner?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
