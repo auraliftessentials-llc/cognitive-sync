@@ -14,7 +14,7 @@ import {
   Crown, Building2, Terminal, Mail, Briefcase, Users, Send, Zap, Loader2,
 } from "lucide-react";
 import { Merkabah } from "@/components/Merkabah";
-import { commandRoute } from "@/lib/command-router.functions";
+import { routeWithRace } from "@/lib/route-with-race";
 import { toast } from "sonner";
 
 type Action = {
@@ -30,7 +30,7 @@ export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [routing, setRouting] = useState(false);
-  const [reply, setReply] = useState<{ intent: string; provider: string; text: string } | null>(null);
+  const [reply, setReply] = useState<{ intent: string; provider: string; source: string; text: string } | null>(null);
   const nav = useNavigate();
 
   useEffect(() => {
@@ -60,8 +60,8 @@ export function CommandPalette() {
     setRouting(true);
     setReply(null);
     try {
-      const res = await commandRoute({ data: { prompt } });
-      setReply({ intent: res.intent, provider: res.provider, text: res.output });
+      const res = await routeWithRace({ prompt });
+      setReply({ intent: res.intent, provider: res.provider, source: res.source, text: res.output });
       if (!res.ok) toast.error(res.output);
     } catch (e: any) {
       toast.error(e?.message ?? "Router failed");
@@ -141,7 +141,7 @@ export function CommandPalette() {
         {reply && (
           <div className="px-3 py-2 border-t border-b border-border/50 bg-card/30 max-h-56 overflow-auto">
             <div className="text-[10px] uppercase tracking-[0.3em] text-brand-cyan mb-1">
-              {reply.intent} · {reply.provider}
+              {reply.intent} · {reply.provider} · <span className="text-brand-violet">{reply.source}</span>
             </div>
             <div className="text-sm whitespace-pre-wrap leading-relaxed">{reply.text}</div>
           </div>
