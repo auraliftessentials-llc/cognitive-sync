@@ -25,7 +25,6 @@ async function brainJson(prompt: string, userId: string, taskKind: string) {
       { role: "system", content: "You return ONLY valid minified JSON. No prose, no code fences." },
       { role: "user", content: prompt },
     ],
-    temperature: 0.7,
   });
   const text = (res as any)?.message?.content ?? "";
   return extractJson(typeof text === "string" ? text : JSON.stringify(text));
