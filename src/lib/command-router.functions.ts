@@ -188,6 +188,7 @@ Acknowledge with: "BRAIN ONLINE · {your model id} · standing by." then execute
         messages,
         taskKind,
         preferredModel,
+        timeoutMs: 12_000,
         reasoning_effort:
           c.intent === "magic.brain" || c.intent === "reasoning" || c.intent === "code"
             ? "medium"
