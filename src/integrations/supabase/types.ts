@@ -916,12 +916,15 @@ export type Database = {
       }
       roadmaps: {
         Row: {
+          auto_revise: boolean
           created_at: string
           data: Json
           duration_weeks: number
           goal: string | null
           id: string
+          last_auto_revised_at: string | null
           merkaba_level: string
+          share_token: string | null
           title: string
           updated_at: string
           user_id: string
@@ -929,12 +932,15 @@ export type Database = {
           workspace_id: string | null
         }
         Insert: {
+          auto_revise?: boolean
           created_at?: string
           data?: Json
           duration_weeks?: number
           goal?: string | null
           id?: string
+          last_auto_revised_at?: string | null
           merkaba_level?: string
+          share_token?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -942,12 +948,15 @@ export type Database = {
           workspace_id?: string | null
         }
         Update: {
+          auto_revise?: boolean
           created_at?: string
           data?: Json
           duration_weeks?: number
           goal?: string | null
           id?: string
+          last_auto_revised_at?: string | null
           merkaba_level?: string
+          share_token?: string | null
           title?: string
           updated_at?: string
           user_id?: string

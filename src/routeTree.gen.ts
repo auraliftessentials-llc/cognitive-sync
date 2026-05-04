@@ -29,6 +29,7 @@ import { Route as SettingsAuthRouteImport } from './routes/settings.auth'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as HooksSyncGithubRouteImport } from './routes/hooks/sync-github'
 import { Route as HooksRunCliSchedulesRouteImport } from './routes/hooks/run-cli-schedules'
+import { Route as ShareRoadmapTokenRouteImport } from './routes/share.roadmap.$token'
 import { Route as ApiZohoCallbackRouteImport } from './routes/api/zoho.callback'
 import { Route as ApiPublicBridgeInstallRouteImport } from './routes/api/public/bridge-install'
 import { Route as ApiPublicBridgeDaemonRouteImport } from './routes/api/public/bridge-daemon'
@@ -36,6 +37,7 @@ import { Route as ApiCliStreamRouteImport } from './routes/api/cli.stream'
 import { Route as ApiCliSplatRouteImport } from './routes/api/cli.$'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicHooksFrontierScanRouteImport } from './routes/api/public/hooks/frontier-scan'
+import { Route as ApiPublicHooksAutoReviseRoadmapsRouteImport } from './routes/api/public/hooks/auto-revise-roadmaps'
 import { Route as ApiPublicBridgeSplatRouteImport } from './routes/api/public/bridge.$'
 
 const TerminalRoute = TerminalRouteImport.update({
@@ -138,6 +140,11 @@ const HooksRunCliSchedulesRoute = HooksRunCliSchedulesRouteImport.update({
   path: '/hooks/run-cli-schedules',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShareRoadmapTokenRoute = ShareRoadmapTokenRouteImport.update({
+  id: '/share/roadmap/$token',
+  path: '/share/roadmap/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiZohoCallbackRoute = ApiZohoCallbackRouteImport.update({
   id: '/api/zoho/callback',
   path: '/api/zoho/callback',
@@ -175,6 +182,12 @@ const ApiPublicHooksFrontierScanRoute =
     path: '/api/public/hooks/frontier-scan',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksAutoReviseRoadmapsRoute =
+  ApiPublicHooksAutoReviseRoadmapsRouteImport.update({
+    id: '/api/public/hooks/auto-revise-roadmaps',
+    path: '/api/public/hooks/auto-revise-roadmaps',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicBridgeSplatRoute = ApiPublicBridgeSplatRouteImport.update({
   id: '/api/public/bridge/$',
   path: '/api/public/bridge/$',
@@ -207,7 +220,9 @@ export interface FileRoutesByFullPath {
   '/api/public/bridge-daemon': typeof ApiPublicBridgeDaemonRoute
   '/api/public/bridge-install': typeof ApiPublicBridgeInstallRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
+  '/share/roadmap/$token': typeof ShareRoadmapTokenRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
+  '/api/public/hooks/auto-revise-roadmaps': typeof ApiPublicHooksAutoReviseRoadmapsRoute
   '/api/public/hooks/frontier-scan': typeof ApiPublicHooksFrontierScanRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -237,7 +252,9 @@ export interface FileRoutesByTo {
   '/api/public/bridge-daemon': typeof ApiPublicBridgeDaemonRoute
   '/api/public/bridge-install': typeof ApiPublicBridgeInstallRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
+  '/share/roadmap/$token': typeof ShareRoadmapTokenRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
+  '/api/public/hooks/auto-revise-roadmaps': typeof ApiPublicHooksAutoReviseRoadmapsRoute
   '/api/public/hooks/frontier-scan': typeof ApiPublicHooksFrontierScanRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -268,7 +285,9 @@ export interface FileRoutesById {
   '/api/public/bridge-daemon': typeof ApiPublicBridgeDaemonRoute
   '/api/public/bridge-install': typeof ApiPublicBridgeInstallRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
+  '/share/roadmap/$token': typeof ShareRoadmapTokenRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
+  '/api/public/hooks/auto-revise-roadmaps': typeof ApiPublicHooksAutoReviseRoadmapsRoute
   '/api/public/hooks/frontier-scan': typeof ApiPublicHooksFrontierScanRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -300,7 +319,9 @@ export interface FileRouteTypes {
     | '/api/public/bridge-daemon'
     | '/api/public/bridge-install'
     | '/api/zoho/callback'
+    | '/share/roadmap/$token'
     | '/api/public/bridge/$'
+    | '/api/public/hooks/auto-revise-roadmaps'
     | '/api/public/hooks/frontier-scan'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -330,7 +351,9 @@ export interface FileRouteTypes {
     | '/api/public/bridge-daemon'
     | '/api/public/bridge-install'
     | '/api/zoho/callback'
+    | '/share/roadmap/$token'
     | '/api/public/bridge/$'
+    | '/api/public/hooks/auto-revise-roadmaps'
     | '/api/public/hooks/frontier-scan'
     | '/api/public/payments/webhook'
   id:
@@ -360,7 +383,9 @@ export interface FileRouteTypes {
     | '/api/public/bridge-daemon'
     | '/api/public/bridge-install'
     | '/api/zoho/callback'
+    | '/share/roadmap/$token'
     | '/api/public/bridge/$'
+    | '/api/public/hooks/auto-revise-roadmaps'
     | '/api/public/hooks/frontier-scan'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
@@ -391,7 +416,9 @@ export interface RootRouteChildren {
   ApiPublicBridgeDaemonRoute: typeof ApiPublicBridgeDaemonRoute
   ApiPublicBridgeInstallRoute: typeof ApiPublicBridgeInstallRoute
   ApiZohoCallbackRoute: typeof ApiZohoCallbackRoute
+  ShareRoadmapTokenRoute: typeof ShareRoadmapTokenRoute
   ApiPublicBridgeSplatRoute: typeof ApiPublicBridgeSplatRoute
+  ApiPublicHooksAutoReviseRoadmapsRoute: typeof ApiPublicHooksAutoReviseRoadmapsRoute
   ApiPublicHooksFrontierScanRoute: typeof ApiPublicHooksFrontierScanRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
@@ -538,6 +565,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HooksRunCliSchedulesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/share/roadmap/$token': {
+      id: '/share/roadmap/$token'
+      path: '/share/roadmap/$token'
+      fullPath: '/share/roadmap/$token'
+      preLoaderRoute: typeof ShareRoadmapTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/zoho/callback': {
       id: '/api/zoho/callback'
       path: '/api/zoho/callback'
@@ -587,6 +621,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksFrontierScanRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/auto-revise-roadmaps': {
+      id: '/api/public/hooks/auto-revise-roadmaps'
+      path: '/api/public/hooks/auto-revise-roadmaps'
+      fullPath: '/api/public/hooks/auto-revise-roadmaps'
+      preLoaderRoute: typeof ApiPublicHooksAutoReviseRoadmapsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/bridge/$': {
       id: '/api/public/bridge/$'
       path: '/api/public/bridge/$'
@@ -623,7 +664,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicBridgeDaemonRoute: ApiPublicBridgeDaemonRoute,
   ApiPublicBridgeInstallRoute: ApiPublicBridgeInstallRoute,
   ApiZohoCallbackRoute: ApiZohoCallbackRoute,
+  ShareRoadmapTokenRoute: ShareRoadmapTokenRoute,
   ApiPublicBridgeSplatRoute: ApiPublicBridgeSplatRoute,
+  ApiPublicHooksAutoReviseRoadmapsRoute: ApiPublicHooksAutoReviseRoadmapsRoute,
   ApiPublicHooksFrontierScanRoute: ApiPublicHooksFrontierScanRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
