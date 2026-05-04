@@ -21,7 +21,15 @@ export type ToolName =
   | "cloudflare_list_dns"
   | "cloudflare_create_dns"
   | "cloudflare_purge_cache"
-  | "cloudflare_workers_ai";
+  | "cloudflare_workers_ai"
+  | "firecrawl_scrape"
+  | "firecrawl_search"
+  | "wikipedia_lookup"
+  | "arxiv_search"
+  | "duckduckgo_instant"
+  | "linear_list_teams"
+  | "linear_create_issue"
+  | "linear_list_issues";
 
 async function getValidToken(userId: string) {
   const { data: conn } = await supabaseAdmin
