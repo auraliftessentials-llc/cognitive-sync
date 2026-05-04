@@ -246,9 +246,12 @@ function Roadmaps() {
           <div className="space-y-2">
             <Textarea value={progressNotes} onChange={(e) => setProgressNotes(e.target.value)}
               placeholder="Progress notes for revision (what you finished, blockers, new goals)…" />
-            <Button onClick={doRevise} disabled={busy === "revise"} variant="secondary">
-              {busy === "revise" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Revise with Merkaba consciousness"}
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={doRevise} disabled={busy === "revise"} variant="secondary">
+                {busy === "revise" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Revise with Merkaba consciousness"}
+              </Button>
+              <Button onClick={downloadCard} variant="outline">Download Road Card</Button>
+            </div>
           </div>
         </div>
       )}
