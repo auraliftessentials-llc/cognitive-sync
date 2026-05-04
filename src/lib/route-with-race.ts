@@ -1,48 +1,86 @@
 /**
- * Client-side race wrapper for the unified Command Router.
+ * Client-side race wrapper v2 — the unified, telemetry-instrumented,
+ * offline-resilient, cache-accelerated brain front-door.
  *
- * Wraps src/lib/command-router.functions.ts → commandRoute (server, with
- * server-key fallback chain) AND src/lib/puter-brain.ts (browser-side, no key)
- * into a single peer race. Whichever responds first with usable text wins.
+ * Layers:
+ *   1. brainCache (LRU, 5min TTL, identical-prompt fast path)        ← 0ms
+ *   2. routeWithRace (server router vs client Puter peers, parallel) ← 200-1500ms
+ *   3. recordRace (telemetry → BroadcastChannel → all tabs)
  *
- * Used by every natural-language UI surface: CEOVoiceHub, CommandPalette,
- * Console quick-input, future bridge — so requests literally cannot fail
- * unless the user is offline.
+ * Failsafes:
+ *   - Puter offline / SDK failed / cooldown → server-only race
+ *   - User pinned a provider → that competitor gets ZERO head start delay
+ *   - Network slow-2g / saveData → skip Puter to save user data
+ *
+ * Used by: CEOVoiceHub, CommandPalette, Console (when raceMode), Chat.
  */
 import { commandRoute, type CommandRouterResult } from "./command-router.functions";
 import { raceBrains, type RaceCompetitor, type RaceMode } from "./brain-race";
+import { checkPuterAvailability, recordPuterFailure, recordPuterSuccess } from "./puter-health";
+import {
+  brainCache,
+  cacheKey,
+  getPreferredProvider,
+  getUserPinnedProvider,
+  recordRace,
+} from "./race-telemetry";
 
 export type RoutedRaceResult = {
   ok: boolean;
-  source: "server" | "puter";
+  source: "server" | "puter" | "cache";
   intent: string;
   provider: string;
   model: string;
   output: string;
   hint?: string;
+  cached?: boolean;
   /** Other peers that responded (or failed). For UI debugging only. */
   trail: { competitor: string; latency_ms: number; ok: boolean; error?: string }[];
 };
 
 const SYSTEM_VOICE = `You are MERKABAH OS — the Master Operator's autonomous command intelligence. Calm precision. No hedging. Single highest-leverage next move at the end. Markdown sparingly.`;
 
-/**
- * Race the server router against client-side Puter peers.
- *
- * Server peer is preferred for tool-using intents (Linear, Cloudflare, etc.)
- * because Puter has no access to your tools. We bias the race by giving the
- * server peer a head start of `serverHeadStartMs` so it usually wins when
- * healthy — Puter only takes over if the server is slow or down.
- */
-export async function routeWithRace(args: {
+export type RouteWithRaceArgs = {
   prompt: string;
   history?: { role: "system" | "user" | "assistant"; content: string }[];
   /** Default "race". Use "all" only for debug UIs. */
   mode?: RaceMode;
   /** Bias toward server when healthy. Default 800ms. Set 0 for true race. */
   serverHeadStartMs?: number;
-}): Promise<RoutedRaceResult> {
-  const { prompt, history = [], mode = "race", serverHeadStartMs = 800 } = args;
+  /** Bypass cache (useful for "regenerate"). */
+  noCache?: boolean;
+  /** Disable telemetry recording (e.g. internal QA pings). */
+  silent?: boolean;
+};
+
+export async function routeWithRace(args: RouteWithRaceArgs): Promise<RoutedRaceResult> {
+  const {
+    prompt,
+    history = [],
+    mode = "race",
+    serverHeadStartMs = 800,
+    noCache = false,
+    silent = false,
+  } = args;
+
+  // ── Layer 1: Cache hit ─────────────────────────────────────────────
+  const key = cacheKey(prompt, history);
+  if (!noCache) {
+    const hit = brainCache.get(key);
+    if (hit) {
+      return {
+        ok: true,
+        source: "cache",
+        intent: "cache",
+        provider: hit.provider,
+        model: hit.model,
+        output: hit.output,
+        cached: true,
+        hint: "Cached (≤5 min)",
+        trail: [],
+      };
+    }
+  }
 
   const messages = [
     { role: "system" as const, content: SYSTEM_VOICE },
@@ -50,17 +88,32 @@ export async function routeWithRace(args: {
     { role: "user" as const, content: prompt },
   ];
 
+  // ── Layer 2: Build competitors ────────────────────────────────────
+  const puterHealth = checkPuterAvailability();
+  const pinned = getUserPinnedProvider();
+  const auto = getPreferredProvider();
+
+  // If user pinned a provider, that one gets zero delay; everyone else gets +400ms.
+  // Otherwise the auto-preferred provider gets a 200ms head start over the rest.
+  const headStart = (label: string): number => {
+    if (pinned) return label === pinned ? 0 : 400;
+    if (auto && label === auto) return 0;
+    if (label === "merkabah-router") return 0;            // server is the safety net
+    return serverHeadStartMs;
+  };
+
   const competitors: RaceCompetitor[] = [
     {
       kind: "server",
       label: "merkabah-router",
-      call: async (_signal): Promise<{ text: string; model: string; provider: string }> => {
+      call: async (signal): Promise<{ text: string; model: string; provider: string }> => {
+        const delay = headStart("merkabah-router");
+        if (delay > 0) await wait(delay, signal);
         const r: CommandRouterResult = await commandRoute({
           data: { prompt, history: history as any },
         });
         if (!r.ok) throw new Error(r.output || "router failed");
-        // Stash hint+intent on the model field in a parseable way so the
-        // outer wrapper can recover them after the race.
+        // Encode intent + hint into model field for downstream recovery.
         return {
           text: r.output,
           model: `${r.model}|${r.intent}|${r.hint ?? ""}`,
@@ -68,26 +121,29 @@ export async function routeWithRace(args: {
         };
       },
     },
-    // Puter peers — staggered start so the server gets first shot at tool work.
-    {
-      kind: "server", // technically client-Puter, but we wrap it as a delayed competitor
-      label: "puter-delayed",
-      call: async (signal): Promise<{ text: string; model: string; provider: string }> => {
-        await new Promise<void>((resolve, reject) => {
-          const t = setTimeout(resolve, serverHeadStartMs);
-          signal.addEventListener("abort", () => {
-            clearTimeout(t);
-            reject(new Error("aborted"));
-          });
-        });
-        // Dynamic import keeps Puter SDK out of the initial bundle.
-        const { callPuter } = await import("./puter-brain");
-        const p = await callPuter({ messages });
-        return { text: p.text, model: p.model, provider: "puter" };
-      },
-    },
   ];
 
+  if (puterHealth.available) {
+    competitors.push({
+      kind: "server", // wrapped as server-style competitor with custom delay
+      label: "puter-delayed",
+      call: async (signal): Promise<{ text: string; model: string; provider: string }> => {
+        const delay = headStart("puter-delayed");
+        if (delay > 0) await wait(delay, signal);
+        try {
+          const { callPuter } = await import("./puter-brain");
+          const p = await callPuter({ messages });
+          recordPuterSuccess();
+          return { text: p.text, model: p.model, provider: "puter" };
+        } catch (e: any) {
+          recordPuterFailure(e?.message ?? "puter call failed");
+          throw e;
+        }
+      },
+    });
+  }
+
+  // ── Run the race ──────────────────────────────────────────────────
   const race = await raceBrains(messages as any, competitors, mode);
   const trail = race.entries.map((e) => ({
     competitor: e.competitor,
@@ -97,18 +153,30 @@ export async function routeWithRace(args: {
   }));
 
   if (!race.winner) {
-    return {
+    const failsafeMsg = !puterHealth.available && puterHealth.reason === "offline"
+      ? "You're offline and the server brain failed. Check your connection."
+      : "Every brain peer failed. Try again in a moment.";
+    const result: RoutedRaceResult = {
       ok: false,
       source: "server",
       intent: "chat",
       provider: "",
       model: "",
-      output: "Every brain peer failed. Check your network.",
+      output: failsafeMsg,
       trail,
     };
+    if (!silent) {
+      recordRace({
+        ts: Date.now(),
+        prompt_preview: prompt.slice(0, 120),
+        winner: null,
+        trail,
+      });
+    }
+    return result;
   }
 
-  // Recover intent/hint encoded by the server peer.
+  // Recover intent/hint from server-encoded model field.
   let intent = "chat";
   let hint: string | undefined;
   let model = race.winner.model ?? "";
@@ -120,17 +188,51 @@ export async function routeWithRace(args: {
     hint = h || undefined;
   } else if (isPuter) {
     intent = "chat";
-    hint = "Puter peer won the race";
+    hint = puterHealth.effectiveType
+      ? `Puter peer won (${puterHealth.effectiveType})`
+      : "Puter peer won";
   }
 
-  return {
+  const provider = race.winner.provider ?? (isPuter ? "puter" : "");
+  const result: RoutedRaceResult = {
     ok: true,
     source: isPuter ? "puter" : "server",
     intent,
-    provider: race.winner.provider ?? (isPuter ? "puter" : ""),
+    provider,
     model,
     output: race.winner.text ?? "",
     hint,
     trail,
   };
+
+  // ── Cache + telemetry ─────────────────────────────────────────────
+  if (!noCache && result.output) {
+    brainCache.set(key, { output: result.output, provider, model });
+  }
+  if (!silent) {
+    recordRace({
+      ts: Date.now(),
+      prompt_preview: prompt.slice(0, 120),
+      winner: {
+        competitor: race.winner.competitor,
+        provider,
+        model,
+        latency_ms: race.winner.latency_ms,
+      },
+      trail,
+      intent,
+    });
+  }
+
+  return result;
+}
+
+function wait(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(resolve, ms);
+    signal.addEventListener("abort", () => {
+      clearTimeout(t);
+      reject(new Error("aborted"));
+    });
+  });
 }

@@ -42,23 +42,40 @@ export function ensurePuter(): Promise<void> {
   if (loadPromise) return loadPromise;
 
   loadPromise = new Promise((resolve, reject) => {
+    const fail = (msg: string) => {
+      // Lazy import to avoid SSR cycle.
+      import("./puter-health").then((m) => m.recordPuterSdkLoadFailure()).catch(() => {});
+      reject(new Error(msg));
+    };
     const existing = document.querySelector<HTMLScriptElement>(
       `script[src="${PUTER_SCRIPT}"]`,
     );
     if (existing) {
       existing.addEventListener("load", () => resolve());
-      existing.addEventListener("error", () => reject(new Error("Puter load failed")));
+      existing.addEventListener("error", () => fail("Puter load failed"));
       return;
     }
     const s = document.createElement("script");
     s.src = PUTER_SCRIPT;
     s.async = true;
-    s.onload = () => (window.puter ? resolve() : reject(new Error("Puter loaded but global missing")));
-    s.onerror = () => reject(new Error("Puter script failed to load"));
+    s.onload = () => (window.puter ? resolve() : fail("Puter loaded but global missing"));
+    s.onerror = () => fail("Puter script failed to load");
     document.head.appendChild(s);
   });
 
   return loadPromise;
+}
+
+/**
+ * Cold-start primer — fire-and-forget. Call once on app boot to warm the
+ * Puter SDK so the first race doesn't pay the script-download cost.
+ */
+export function primePuter(): void {
+  if (typeof window === "undefined") return;
+  // Only prime if we have decent connectivity.
+  const conn = (navigator as any).connection;
+  if (conn?.saveData || conn?.effectiveType === "slow-2g") return;
+  ensurePuter().catch(() => { /* health module already recorded */ });
 }
 
 /**

@@ -6,9 +6,10 @@
 import { useEffect, useState, useTransition } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getBrainHealthCached, refreshBrainHealth, type BrainHealthSnapshot } from "@/lib/health.functions";
-import { RefreshCw, Activity } from "lucide-react";
+import { RefreshCw, Activity, ChevronDown, ChevronUp } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { RaceTelemetryPanel } from "@/components/RaceTelemetryPanel";
 
 const POLL_MS = 60_000;
 
@@ -23,6 +24,7 @@ export function BrainStatusBar() {
   const [snap, setSnap] = useState<BrainHealthSnapshot | null>(null);
   const [pending, startTransition] = useTransition();
   const [refreshing, setRefreshing] = useState(false);
+  const [showRace, setShowRace] = useState(false);
   const cached = useServerFn(getBrainHealthCached);
   const refresh = useServerFn(refreshBrainHealth);
 
@@ -114,6 +116,19 @@ export function BrainStatusBar() {
             );
           })}
         </div>
+
+        <button
+          onClick={() => setShowRace((v) => !v)}
+          className="mt-2 w-full flex items-center justify-between text-[9px] uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition border-t border-border/40 pt-2"
+        >
+          <span>Race Telemetry</span>
+          {showRace ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+        </button>
+        {showRace && (
+          <div className="mt-2">
+            <RaceTelemetryPanel />
+          </div>
+        )}
       </div>
     </TooltipProvider>
   );
