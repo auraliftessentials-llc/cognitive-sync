@@ -37,6 +37,8 @@ const MAGIC_COMMANDS = [
 const QUICK_COMMANDS = [
   { label: "Daily brief", text: "Give me my daily brief: top 3 moves, 1 risk, 1 quick win." },
   { label: "Revenue", text: "Where's the fastest path to revenue this week across my portfolio?" },
+  { label: "File issue", text: "File an issue: " },
+  { label: "Research", text: "Research: " },
 ];
 
 export function CEOVoiceHub() {
