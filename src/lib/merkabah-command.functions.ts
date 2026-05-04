@@ -64,7 +64,7 @@ export const runMerkabahCommand = createServerFn({ method: "POST" })
         preferredModel: "x-ai/grok-4",
         taskKind: "reasoning",
       });
-      const output = brain.message?.content ?? brain.text ?? "";
+      const output = brain.message?.content ?? "";
       const latency = Date.now() - startedAt;
 
       await supabase
