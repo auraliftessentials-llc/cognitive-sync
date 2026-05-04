@@ -184,11 +184,43 @@ function ConsoleScreen() {
 
   function push(l: Line) { setLines((prev) => [...prev, l]); }
 
+  // Heuristic: does this prompt obviously need server tools? If not, we
+  // race a Puter "instant peek" alongside the canonical agent run.
+  function looksLikeToolPrompt(t: string): boolean {
+    const s = t.toLowerCase();
+    if (s.startsWith("/")) return true;
+    return /\b(create|file|open|close|update|delete|deploy|purge|scrape|crawl|search the web|live|fetch|get the|push|commit|merge|pr |pull request|issue|deal|lead|contact|zone|dns|cache|webhook|invite|email|workflow)\b/.test(s);
+  }
+
   async function runAgent(text: string) {
     if (!active) { push({ kind: "error", text: "No agent loaded yet." }); return; }
     push({ kind: "user", text });
     setBusy(true);
     push({ kind: "system", text: `${active.emoji} ${active.name} thinking on ${model}…` });
+
+    // INSTANT PEEK — fire a client-side race in parallel for non-tool prompts
+    // so the operator sees something within ~300-800ms even if the canonical
+    // agent run is still going. The agent's full reply (with tools) is the
+    // source of truth and lands when ready.
+    let peekShown = false;
+    const peekPromise = looksLikeToolPrompt(text)
+      ? Promise.resolve(null)
+      : routeWithRace({
+          prompt: text,
+          history,
+          serverHeadStartMs: 600,
+          silent: true, // agent run will record the canonical race entry
+        }).catch(() => null);
+
+    void peekPromise.then((peek) => {
+      if (peek?.ok && peek.output && !peekShown) {
+        peekShown = true;
+        push({
+          kind: "system",
+          text: `⚡ Instant peek (${peek.source}/${peek.provider}): ${peek.output.slice(0, 240)}${peek.output.length > 240 ? "…" : ""}`,
+        });
+      }
+    });
 
     try {
       const res = await consoleRun({
