@@ -248,3 +248,60 @@ export const updateProgress = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true, message: "Merkaba progress recorded. The field has shifted." };
   });
+
+/* ─────────── Progress Timeline ─────────── */
+export const listProgress = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ roadmap_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context as any;
+    const { data: rows, error } = await supabase
+      .from("roadmap_progress")
+      .select("topic_name,status,mastery_level,time_spent_minutes,notes,updated_at,created_at")
+      .eq("roadmap_id", data.roadmap_id)
+      .order("updated_at", { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    return rows ?? [];
+  });
+
+/* ─────────── Share Link Management ─────────── */
+function randToken(len = 24) {
+  const bytes = new Uint8Array(len);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+export const setRoadmapShare = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    id: z.string().uuid(),
+    enabled: z.boolean(),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { userId } = context as any;
+    const { data: row } = await supabaseAdmin
+      .from("roadmaps").select("user_id,share_token").eq("id", data.id).maybeSingle();
+    if (!row) throw new Error("Roadmap not found");
+    if (row.user_id !== userId) throw new Error("Forbidden");
+    const token = data.enabled ? (row.share_token ?? randToken(20)) : null;
+    await supabaseAdmin.from("roadmaps").update({ share_token: token }).eq("id", data.id);
+    return { token };
+  });
+
+/* ─────────── Auto-Revise Toggle ─────────── */
+export const setAutoRevise = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    id: z.string().uuid(),
+    enabled: z.boolean(),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { userId } = context as any;
+    const { data: row } = await supabaseAdmin
+      .from("roadmaps").select("user_id").eq("id", data.id).maybeSingle();
+    if (!row || row.user_id !== userId) throw new Error("Forbidden");
+    await supabaseAdmin.from("roadmaps").update({ auto_revise: data.enabled }).eq("id", data.id);
+    return { ok: true, enabled: data.enabled };
+  });
+
