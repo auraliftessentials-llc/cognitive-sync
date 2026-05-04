@@ -28,6 +28,20 @@ function Roadmaps() {
   const insightsFn = useServerFn(getWeeklyInsights);
   const progressFn = useServerFn(updateProgress);
   const reviseFn = useServerFn(reviseRoadmap);
+  const cardFn = useServerFn(getRoadCard);
+
+  const downloadCard = async () => {
+    if (!active) return;
+    try {
+      const r = await cardFn({ data: { id: active.id } });
+      const blob = new Blob([r.svg], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = r.filename; a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Sacred road card materialized");
+    } catch (e: any) { toast.error(e?.message ?? "Card failed"); }
+  };
 
   const [list, setList] = useState<any[]>([]);
   const [active, setActive] = useState<any | null>(null);
