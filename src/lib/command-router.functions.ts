@@ -121,7 +121,8 @@ export const commandRoute = createServerFn({ method: "POST" })
       forceTaskKind?: TaskKind;
     }) => input,
   )
-  .handler(async ({ data }): Promise<CommandRouterResult> => {
+  .handler(async ({ data, context }): Promise<CommandRouterResult> => {
+    const { userId } = context as any;
     const prompt = (data.prompt ?? "").trim();
     if (!prompt) {
       return {
@@ -233,7 +234,7 @@ Acknowledge with: "BRAIN ONLINE · {your model id} · standing by." then execute
               let parsed: any = {};
               try { parsed = JSON.parse(tc.function?.arguments ?? "{}"); } catch { /* tolerate */ }
               try {
-                const result = await executeTool((context as any).userId, name, parsed);
+                const result = await executeTool(userId, name, parsed);
                 toolCalls.push({ name, ok: true });
                 messages.push({ role: "tool", tool_call_id: tc.id, name, content: JSON.stringify(result).slice(0, 8000) });
               } catch (e: any) {
