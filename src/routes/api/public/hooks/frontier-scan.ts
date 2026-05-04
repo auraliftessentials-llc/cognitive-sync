@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { runFrontierScan } from "@/lib/frontier-intel.functions";
+import { runFrontierScan } from "@/lib/frontier-intel.server";
 
 export const Route = createFileRoute("/api/public/hooks/frontier-scan")({
   server: {
