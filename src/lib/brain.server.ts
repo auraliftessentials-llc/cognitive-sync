@@ -290,6 +290,9 @@ type CallOptions = {
   exclude?: ProviderId[];
   /** Hard timeout per provider, ms. Default 45s. */
   timeoutMs?: number;
+  /** Optional metering context — when present, usage_events row is written. */
+  userId?: string;
+  workspaceId?: string | null;
 };
 
 export type BrainResponse = {
