@@ -16,6 +16,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { callBrain, type BrainMessage, type TaskKind } from "./brain.server";
+import { executeTool, TOOL_SCHEMAS, type ToolName } from "./zoho-tools.server";
 
 type RouterIntent =
   | "code"
@@ -27,6 +28,8 @@ type RouterIntent =
   | "github"
   | "zoho"
   | "cloudflare"
+  | "linear"
+  | "knowledge"
   | "chat"
   | "magic.next"
   | "magic.do"
@@ -67,11 +70,19 @@ function classify(input: string): { intent: RouterIntent; taskKind: TaskKind; hi
     return { intent: "github", taskKind: "tools", hint: "GitHub keyword" };
   if (/(zoho|crm|deals|leads|pipeline|contacts)/.test(t))
     return { intent: "zoho", taskKind: "tools", hint: "Zoho/CRM keyword" };
-  if (/(cloudflare|cf zones?|purge cache|workers ai|wrangler)/.test(t))
+  if (/(cloudflare|cf zones?|purge cache|workers ai|wrangler|dns record)/.test(t))
     return { intent: "cloudflare", taskKind: "tools", hint: "Cloudflare keyword" };
 
+  // Linear issue filing
+  if (/(file (an? )?(issue|bug|ticket|task)|create (an? )?(issue|bug|ticket)|linear|open (an? )?(issue|bug|ticket))/.test(t))
+    return { intent: "linear", taskKind: "tools", hint: "Linear / issue filing" };
+
+  // Free-knowledge lookups (Wikipedia, arXiv, DuckDuckGo)
+  if (/(wikipedia|wiki |wiki:|arxiv|paper on|preprint|encyclopedia)/.test(t))
+    return { intent: "knowledge", taskKind: "fast", hint: "Free knowledge sources" };
+
   // research / live web
-  if (/(latest|today|news|search|research|look up|current price|stock|weather|sports|score)/.test(t))
+  if (/(latest|today|news|search|research|look up|current price|stock|weather|sports|score|scrape|crawl)/.test(t))
     return { intent: "research", taskKind: "fast", hint: "Live-web research signal" };
 
   // code
