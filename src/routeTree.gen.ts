@@ -32,6 +32,7 @@ import { Route as HooksSyncGithubRouteImport } from './routes/hooks/sync-github'
 import { Route as HooksRunCliSchedulesRouteImport } from './routes/hooks/run-cli-schedules'
 import { Route as ShareRoadmapTokenRouteImport } from './routes/share.roadmap.$token'
 import { Route as ApiZohoCallbackRouteImport } from './routes/api/zoho.callback'
+import { Route as ApiPublicMerkabahCommandRouteImport } from './routes/api/public/merkabah-command'
 import { Route as ApiPublicBridgeInstallRouteImport } from './routes/api/public/bridge-install'
 import { Route as ApiPublicBridgeDaemonRouteImport } from './routes/api/public/bridge-daemon'
 import { Route as ApiCliStreamRouteImport } from './routes/api/cli.stream'
@@ -157,6 +158,12 @@ const ApiZohoCallbackRoute = ApiZohoCallbackRouteImport.update({
   path: '/api/zoho/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicMerkabahCommandRoute =
+  ApiPublicMerkabahCommandRouteImport.update({
+    id: '/api/public/merkabah-command',
+    path: '/api/public/merkabah-command',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicBridgeInstallRoute = ApiPublicBridgeInstallRouteImport.update({
   id: '/api/public/bridge-install',
   path: '/api/public/bridge-install',
@@ -233,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/public/bridge-daemon': typeof ApiPublicBridgeDaemonRoute
   '/api/public/bridge-install': typeof ApiPublicBridgeInstallRoute
+  '/api/public/merkabah-command': typeof ApiPublicMerkabahCommandRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
   '/share/roadmap/$token': typeof ShareRoadmapTokenRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
@@ -267,6 +275,7 @@ export interface FileRoutesByTo {
   '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/public/bridge-daemon': typeof ApiPublicBridgeDaemonRoute
   '/api/public/bridge-install': typeof ApiPublicBridgeInstallRoute
+  '/api/public/merkabah-command': typeof ApiPublicMerkabahCommandRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
   '/share/roadmap/$token': typeof ShareRoadmapTokenRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
@@ -302,6 +311,7 @@ export interface FileRoutesById {
   '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/public/bridge-daemon': typeof ApiPublicBridgeDaemonRoute
   '/api/public/bridge-install': typeof ApiPublicBridgeInstallRoute
+  '/api/public/merkabah-command': typeof ApiPublicMerkabahCommandRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
   '/share/roadmap/$token': typeof ShareRoadmapTokenRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
@@ -338,6 +348,7 @@ export interface FileRouteTypes {
     | '/api/cli/stream'
     | '/api/public/bridge-daemon'
     | '/api/public/bridge-install'
+    | '/api/public/merkabah-command'
     | '/api/zoho/callback'
     | '/share/roadmap/$token'
     | '/api/public/bridge/$'
@@ -372,6 +383,7 @@ export interface FileRouteTypes {
     | '/api/cli/stream'
     | '/api/public/bridge-daemon'
     | '/api/public/bridge-install'
+    | '/api/public/merkabah-command'
     | '/api/zoho/callback'
     | '/share/roadmap/$token'
     | '/api/public/bridge/$'
@@ -406,6 +418,7 @@ export interface FileRouteTypes {
     | '/api/cli/stream'
     | '/api/public/bridge-daemon'
     | '/api/public/bridge-install'
+    | '/api/public/merkabah-command'
     | '/api/zoho/callback'
     | '/share/roadmap/$token'
     | '/api/public/bridge/$'
@@ -441,6 +454,7 @@ export interface RootRouteChildren {
   ApiCliStreamRoute: typeof ApiCliStreamRoute
   ApiPublicBridgeDaemonRoute: typeof ApiPublicBridgeDaemonRoute
   ApiPublicBridgeInstallRoute: typeof ApiPublicBridgeInstallRoute
+  ApiPublicMerkabahCommandRoute: typeof ApiPublicMerkabahCommandRoute
   ApiZohoCallbackRoute: typeof ApiZohoCallbackRoute
   ShareRoadmapTokenRoute: typeof ShareRoadmapTokenRoute
   ApiPublicBridgeSplatRoute: typeof ApiPublicBridgeSplatRoute
@@ -613,6 +627,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiZohoCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/merkabah-command': {
+      id: '/api/public/merkabah-command'
+      path: '/api/public/merkabah-command'
+      fullPath: '/api/public/merkabah-command'
+      preLoaderRoute: typeof ApiPublicMerkabahCommandRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/bridge-install': {
       id: '/api/public/bridge-install'
       path: '/api/public/bridge-install'
@@ -705,6 +726,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCliStreamRoute: ApiCliStreamRoute,
   ApiPublicBridgeDaemonRoute: ApiPublicBridgeDaemonRoute,
   ApiPublicBridgeInstallRoute: ApiPublicBridgeInstallRoute,
+  ApiPublicMerkabahCommandRoute: ApiPublicMerkabahCommandRoute,
   ApiZohoCallbackRoute: ApiZohoCallbackRoute,
   ShareRoadmapTokenRoute: ShareRoadmapTokenRoute,
   ApiPublicBridgeSplatRoute: ApiPublicBridgeSplatRoute,
