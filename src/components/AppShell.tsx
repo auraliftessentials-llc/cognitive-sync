@@ -16,6 +16,8 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import type { ReactNode } from "react";
+import { useEffect } from "react";
+import { primePuter } from "@/lib/puter-brain";
 
 const navItems = [
   { to: "/dashboard", label: "Pulse", icon: Brain },
