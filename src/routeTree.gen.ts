@@ -13,6 +13,7 @@ import { Route as TerminalRouteImport } from './routes/terminal'
 import { Route as SuggestionsRouteImport } from './routes/suggestions'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as LegalRouteImport } from './routes/legal'
 import { Route as GithubRouteImport } from './routes/github'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ConsoleRouteImport } from './routes/console'
@@ -31,6 +32,7 @@ import { Route as ApiPublicBridgeInstallRouteImport } from './routes/api/public/
 import { Route as ApiPublicBridgeDaemonRouteImport } from './routes/api/public/bridge-daemon'
 import { Route as ApiCliStreamRouteImport } from './routes/api/cli.stream'
 import { Route as ApiCliSplatRouteImport } from './routes/api/cli.$'
+import { Route as ApiPublicHooksFrontierScanRouteImport } from './routes/api/public/hooks/frontier-scan'
 import { Route as ApiPublicBridgeSplatRouteImport } from './routes/api/public/bridge.$'
 
 const TerminalRoute = TerminalRouteImport.update({
@@ -51,6 +53,11 @@ const ProjectsRoute = ProjectsRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalRoute = LegalRouteImport.update({
+  id: '/legal',
+  path: '/legal',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GithubRoute = GithubRouteImport.update({
@@ -143,6 +150,12 @@ const ApiCliSplatRoute = ApiCliSplatRouteImport.update({
   path: '/api/cli/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksFrontierScanRoute =
+  ApiPublicHooksFrontierScanRouteImport.update({
+    id: '/api/public/hooks/frontier-scan',
+    path: '/api/public/hooks/frontier-scan',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicBridgeSplatRoute = ApiPublicBridgeSplatRouteImport.update({
   id: '/api/public/bridge/$',
   path: '/api/public/bridge/$',
@@ -159,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/console': typeof ConsoleRoute
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
+  '/legal': typeof LegalRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/suggestions': typeof SuggestionsRoute
@@ -173,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/api/public/bridge-install': typeof ApiPublicBridgeInstallRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
+  '/api/public/hooks/frontier-scan': typeof ApiPublicHooksFrontierScanRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -184,6 +199,7 @@ export interface FileRoutesByTo {
   '/console': typeof ConsoleRoute
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
+  '/legal': typeof LegalRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/suggestions': typeof SuggestionsRoute
@@ -198,6 +214,7 @@ export interface FileRoutesByTo {
   '/api/public/bridge-install': typeof ApiPublicBridgeInstallRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
+  '/api/public/hooks/frontier-scan': typeof ApiPublicHooksFrontierScanRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -210,6 +227,7 @@ export interface FileRoutesById {
   '/console': typeof ConsoleRoute
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
+  '/legal': typeof LegalRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/suggestions': typeof SuggestionsRoute
@@ -224,6 +242,7 @@ export interface FileRoutesById {
   '/api/public/bridge-install': typeof ApiPublicBridgeInstallRoute
   '/api/zoho/callback': typeof ApiZohoCallbackRoute
   '/api/public/bridge/$': typeof ApiPublicBridgeSplatRoute
+  '/api/public/hooks/frontier-scan': typeof ApiPublicHooksFrontierScanRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -237,6 +256,7 @@ export interface FileRouteTypes {
     | '/console'
     | '/dashboard'
     | '/github'
+    | '/legal'
     | '/profile'
     | '/projects'
     | '/suggestions'
@@ -251,6 +271,7 @@ export interface FileRouteTypes {
     | '/api/public/bridge-install'
     | '/api/zoho/callback'
     | '/api/public/bridge/$'
+    | '/api/public/hooks/frontier-scan'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -262,6 +283,7 @@ export interface FileRouteTypes {
     | '/console'
     | '/dashboard'
     | '/github'
+    | '/legal'
     | '/profile'
     | '/projects'
     | '/suggestions'
@@ -276,6 +298,7 @@ export interface FileRouteTypes {
     | '/api/public/bridge-install'
     | '/api/zoho/callback'
     | '/api/public/bridge/$'
+    | '/api/public/hooks/frontier-scan'
   id:
     | '__root__'
     | '/'
@@ -287,6 +310,7 @@ export interface FileRouteTypes {
     | '/console'
     | '/dashboard'
     | '/github'
+    | '/legal'
     | '/profile'
     | '/projects'
     | '/suggestions'
@@ -301,6 +325,7 @@ export interface FileRouteTypes {
     | '/api/public/bridge-install'
     | '/api/zoho/callback'
     | '/api/public/bridge/$'
+    | '/api/public/hooks/frontier-scan'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -313,6 +338,7 @@ export interface RootRouteChildren {
   ConsoleRoute: typeof ConsoleRoute
   DashboardRoute: typeof DashboardRoute
   GithubRoute: typeof GithubRoute
+  LegalRoute: typeof LegalRoute
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRoute
   SuggestionsRoute: typeof SuggestionsRoute
@@ -327,6 +353,7 @@ export interface RootRouteChildren {
   ApiPublicBridgeInstallRoute: typeof ApiPublicBridgeInstallRoute
   ApiZohoCallbackRoute: typeof ApiZohoCallbackRoute
   ApiPublicBridgeSplatRoute: typeof ApiPublicBridgeSplatRoute
+  ApiPublicHooksFrontierScanRoute: typeof ApiPublicHooksFrontierScanRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -357,6 +384,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal': {
+      id: '/legal'
+      path: '/legal'
+      fullPath: '/legal'
+      preLoaderRoute: typeof LegalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/github': {
@@ -485,6 +519,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCliSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/frontier-scan': {
+      id: '/api/public/hooks/frontier-scan'
+      path: '/api/public/hooks/frontier-scan'
+      fullPath: '/api/public/hooks/frontier-scan'
+      preLoaderRoute: typeof ApiPublicHooksFrontierScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/bridge/$': {
       id: '/api/public/bridge/$'
       path: '/api/public/bridge/$'
@@ -505,6 +546,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConsoleRoute: ConsoleRoute,
   DashboardRoute: DashboardRoute,
   GithubRoute: GithubRoute,
+  LegalRoute: LegalRoute,
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRoute,
   SuggestionsRoute: SuggestionsRoute,
@@ -519,6 +561,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicBridgeInstallRoute: ApiPublicBridgeInstallRoute,
   ApiZohoCallbackRoute: ApiZohoCallbackRoute,
   ApiPublicBridgeSplatRoute: ApiPublicBridgeSplatRoute,
+  ApiPublicHooksFrontierScanRoute: ApiPublicHooksFrontierScanRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
