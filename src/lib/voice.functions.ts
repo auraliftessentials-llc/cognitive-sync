@@ -58,6 +58,66 @@ export const speak = createServerFn({ method: "POST" })
     return { ok: true, voice_id: data.voiceId, audio_base64, bytes: buf.byteLength };
   });
 
+export type TranscribeResult = {
+  ok: boolean;
+  text?: string;
+  language?: string;
+  error?: string;
+};
+
+/**
+ * Transcribe — ElevenLabs Scribe v2 batch STT.
+ * Accepts base64-encoded audio (any common format: webm/opus, mp4, wav, mp3).
+ */
+export const transcribe = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { audio_base64: string; mime_type?: string; language?: string }) => ({
+    audio_base64: String(d.audio_base64 ?? ""),
+    mime_type: d.mime_type || "audio/webm",
+    language: d.language || "eng",
+  }))
+  .handler(async ({ data }): Promise<TranscribeResult> => {
+    const key = process.env.ELEVENLABS_API_KEY;
+    if (!key) return { ok: false, error: "ELEVENLABS_API_KEY not configured" };
+    if (!data.audio_base64) return { ok: false, error: "Empty audio" };
+
+    let bytes: Buffer;
+    try {
+      bytes = Buffer.from(data.audio_base64, "base64");
+    } catch {
+      return { ok: false, error: "Invalid base64 audio" };
+    }
+    if (!bytes.byteLength) return { ok: false, error: "Empty audio buffer" };
+
+    const fd = new FormData();
+    const ab = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+    const blob = new Blob([ab], { type: data.mime_type });
+    const ext = data.mime_type.includes("mp4") ? "mp4"
+      : data.mime_type.includes("wav") ? "wav"
+      : data.mime_type.includes("mpeg") ? "mp3"
+      : "webm";
+    fd.append("file", blob, `clip.${ext}`);
+    fd.append("model_id", "scribe_v2");
+    fd.append("language_code", data.language);
+    fd.append("tag_audio_events", "false");
+
+    try {
+      const r = await fetch(`${ELEVEN_BASE}/speech-to-text`, {
+        method: "POST",
+        headers: { "xi-api-key": key },
+        body: fd,
+      });
+      if (!r.ok) {
+        const t = await r.text().catch(() => "");
+        return { ok: false, error: `${r.status}: ${t.slice(0, 240)}` };
+      }
+      const j: any = await r.json().catch(() => ({}));
+      return { ok: true, text: String(j?.text ?? "").trim(), language: j?.language_code };
+    } catch (e: any) {
+      return { ok: false, error: e?.message ?? "network error" };
+    }
+  });
+
 export const voiceStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
