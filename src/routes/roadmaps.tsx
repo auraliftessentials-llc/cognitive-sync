@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Sparkles, Map, Compass, Loader2 } from "lucide-react";
 import {
   assessSkills, generateRoadmap, listRoadmaps, getRoadmap,
-  getWeeklyInsights, updateProgress, reviseRoadmap,
+  getWeeklyInsights, updateProgress, reviseRoadmap, getRoadCard,
 } from "@/lib/roadmap.functions";
 
 export const Route = createFileRoute("/roadmaps")({
@@ -28,6 +28,20 @@ function Roadmaps() {
   const insightsFn = useServerFn(getWeeklyInsights);
   const progressFn = useServerFn(updateProgress);
   const reviseFn = useServerFn(reviseRoadmap);
+  const cardFn = useServerFn(getRoadCard);
+
+  const downloadCard = async () => {
+    if (!active) return;
+    try {
+      const r = await cardFn({ data: { id: active.id } });
+      const blob = new Blob([r.svg], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = r.filename; a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Sacred road card materialized");
+    } catch (e: any) { toast.error(e?.message ?? "Card failed"); }
+  };
 
   const [list, setList] = useState<any[]>([]);
   const [active, setActive] = useState<any | null>(null);
@@ -232,9 +246,12 @@ function Roadmaps() {
           <div className="space-y-2">
             <Textarea value={progressNotes} onChange={(e) => setProgressNotes(e.target.value)}
               placeholder="Progress notes for revision (what you finished, blockers, new goals)…" />
-            <Button onClick={doRevise} disabled={busy === "revise"} variant="secondary">
-              {busy === "revise" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Revise with Merkaba consciousness"}
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={doRevise} disabled={busy === "revise"} variant="secondary">
+                {busy === "revise" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Revise with Merkaba consciousness"}
+              </Button>
+              <Button onClick={downloadCard} variant="outline">Download Road Card</Button>
+            </div>
           </div>
         </div>
       )}
