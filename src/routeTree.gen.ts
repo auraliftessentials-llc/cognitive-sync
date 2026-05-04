@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TerminalRouteImport } from './routes/terminal'
 import { Route as SuggestionsRouteImport } from './routes/suggestions'
+import { Route as RoadmapsRouteImport } from './routes/roadmaps'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LegalRouteImport } from './routes/legal'
@@ -45,6 +46,11 @@ const TerminalRoute = TerminalRouteImport.update({
 const SuggestionsRoute = SuggestionsRouteImport.update({
   id: '/suggestions',
   path: '/suggestions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RoadmapsRoute = RoadmapsRouteImport.update({
+  id: '/roadmaps',
+  path: '/roadmaps',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsRoute = ProjectsRouteImport.update({
@@ -189,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/legal': typeof LegalRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
+  '/roadmaps': typeof RoadmapsRoute
   '/suggestions': typeof SuggestionsRoute
   '/terminal': typeof TerminalRoute
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
@@ -218,6 +225,7 @@ export interface FileRoutesByTo {
   '/legal': typeof LegalRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
+  '/roadmaps': typeof RoadmapsRoute
   '/suggestions': typeof SuggestionsRoute
   '/terminal': typeof TerminalRoute
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
@@ -248,6 +256,7 @@ export interface FileRoutesById {
   '/legal': typeof LegalRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
+  '/roadmaps': typeof RoadmapsRoute
   '/suggestions': typeof SuggestionsRoute
   '/terminal': typeof TerminalRoute
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
@@ -279,6 +288,7 @@ export interface FileRouteTypes {
     | '/legal'
     | '/profile'
     | '/projects'
+    | '/roadmaps'
     | '/suggestions'
     | '/terminal'
     | '/hooks/run-cli-schedules'
@@ -308,6 +318,7 @@ export interface FileRouteTypes {
     | '/legal'
     | '/profile'
     | '/projects'
+    | '/roadmaps'
     | '/suggestions'
     | '/terminal'
     | '/hooks/run-cli-schedules'
@@ -337,6 +348,7 @@ export interface FileRouteTypes {
     | '/legal'
     | '/profile'
     | '/projects'
+    | '/roadmaps'
     | '/suggestions'
     | '/terminal'
     | '/hooks/run-cli-schedules'
@@ -367,6 +379,7 @@ export interface RootRouteChildren {
   LegalRoute: typeof LegalRoute
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRoute
+  RoadmapsRoute: typeof RoadmapsRoute
   SuggestionsRoute: typeof SuggestionsRoute
   TerminalRoute: typeof TerminalRoute
   HooksRunCliSchedulesRoute: typeof HooksRunCliSchedulesRoute
@@ -397,6 +410,13 @@ declare module '@tanstack/react-router' {
       path: '/suggestions'
       fullPath: '/suggestions'
       preLoaderRoute: typeof SuggestionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/roadmaps': {
+      id: '/roadmaps'
+      path: '/roadmaps'
+      fullPath: '/roadmaps'
+      preLoaderRoute: typeof RoadmapsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects': {
@@ -591,6 +611,7 @@ const rootRouteChildren: RootRouteChildren = {
   LegalRoute: LegalRoute,
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRoute,
+  RoadmapsRoute: RoadmapsRoute,
   SuggestionsRoute: SuggestionsRoute,
   TerminalRoute: TerminalRoute,
   HooksRunCliSchedulesRoute: HooksRunCliSchedulesRoute,
