@@ -254,7 +254,21 @@ function Constellation() {
             disabled={running}
             className="bg-background/50"
           />
-          <Button onClick={fireCommand} disabled={running || !cmd.trim()} className="bg-gradient-to-r from-cyan-500 via-blue-600 to-violet-600 text-white border-0">
+          <Button
+            type="button"
+            variant="outline"
+            onMouseDown={startRecording}
+            onMouseUp={stopRecording}
+            onMouseLeave={() => recording && stopRecording()}
+            onTouchStart={startRecording}
+            onTouchEnd={stopRecording}
+            disabled={running || transcribing}
+            className={recording ? "border-rose-500 text-rose-400" : ""}
+            title="Hold to talk"
+          >
+            {transcribing ? <Radio className="h-4 w-4 animate-pulse" /> : recording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </Button>
+          <Button onClick={() => fireCommand()} disabled={running || !cmd.trim()} className="bg-gradient-to-r from-cyan-500 via-blue-600 to-violet-600 text-white border-0">
             <Send className={`h-4 w-4 mr-2 ${running ? "animate-pulse" : ""}`} />
             {running ? "Routing…" : "Fire"}
           </Button>
