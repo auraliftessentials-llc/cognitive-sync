@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Activity, Cloud, Bot, Server, Zap, RefreshCw, Sparkles, ExternalLink } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Activity, Cloud, Bot, Server, Zap, RefreshCw, Sparkles, ExternalLink, Send, Volume2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   listConstellation,
@@ -11,6 +12,8 @@ import {
   probeAll,
   type ConstellationNode,
 } from "@/lib/constellation.functions";
+import { runMerkabahCommand } from "@/lib/merkabah-command.functions";
+import { speak } from "@/lib/voice.functions";
 
 export const Route = createFileRoute("/constellation")({
   component: () => (
@@ -51,6 +54,42 @@ function Constellation() {
   const [nodes, setNodes] = useState<ConstellationNode[]>([]);
   const [busy, setBusy] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [cmd, setCmd] = useState("");
+  const [running, setRunning] = useState(false);
+  const [lastOutput, setLastOutput] = useState<{ text: string; provider: string; model: string; latency: number } | null>(null);
+  const [autoProbe, setAutoProbe] = useState(true);
+  const [voiceOn, setVoiceOn] = useState(true);
+  const probeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fireCommand = async () => {
+    const text = cmd.trim();
+    if (!text || running) return;
+    setRunning(true);
+    setLastOutput(null);
+    try {
+      const r: any = await runMerkabahCommand({ data: { command: text, source: "ui" } });
+      if (r?.ok) {
+        setLastOutput({ text: r.output, provider: r.provider, model: r.model, latency: r.latency_ms });
+        setCmd("");
+        toast.success(`${r.provider} · ${r.latency_ms}ms`);
+        if (voiceOn && r.output) {
+          try {
+            const v: any = await speak({ data: { text: String(r.output).slice(0, 800) } });
+            if (v?.ok && v.audio_base64) {
+              const audio = new Audio(`data:audio/mpeg;base64,${v.audio_base64}`);
+              audio.play().catch(() => {});
+            }
+          } catch { /* voice optional */ }
+        }
+      } else {
+        toast.error(r?.error ?? "Command failed");
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Command failed");
+    } finally {
+      setRunning(false);
+    }
+  };
 
   const load = async () => {
     try {
@@ -86,6 +125,20 @@ function Constellation() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    if (probeTimer.current) clearInterval(probeTimer.current);
+    if (autoProbe) {
+      probeTimer.current = setInterval(() => {
+        if (!busy) {
+          probeAll().then((r) => setNodes(r.nodes)).catch(() => {});
+        }
+      }, 60_000);
+    }
+    return () => {
+      if (probeTimer.current) clearInterval(probeTimer.current);
+    };
+  }, [autoProbe, busy]);
 
   const grouped = nodes.reduce<Record<string, ConstellationNode[]>>((acc, n) => {
     (acc[n.kind] ??= []).push(n);
