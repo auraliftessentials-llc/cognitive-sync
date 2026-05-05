@@ -27,6 +27,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
 import { Route as SettingsCloudflareRouteImport } from './routes/settings.cloudflare'
 import { Route as SettingsAuthRouteImport } from './routes/settings.auth'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
@@ -133,6 +134,11 @@ const AdminRoute = AdminRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
+  id: '/settings/integrations',
+  path: '/settings/integrations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsCloudflareRoute = SettingsCloudflareRouteImport.update({
@@ -250,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/invite/$token': typeof InviteTokenRoute
   '/settings/auth': typeof SettingsAuthRoute
   '/settings/cloudflare': typeof SettingsCloudflareRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
   '/api/cli/$': typeof ApiCliSplatRoute
   '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/public/bridge-daemon': typeof ApiPublicBridgeDaemonRoute
@@ -287,6 +294,7 @@ export interface FileRoutesByTo {
   '/invite/$token': typeof InviteTokenRoute
   '/settings/auth': typeof SettingsAuthRoute
   '/settings/cloudflare': typeof SettingsCloudflareRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
   '/api/cli/$': typeof ApiCliSplatRoute
   '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/public/bridge-daemon': typeof ApiPublicBridgeDaemonRoute
@@ -325,6 +333,7 @@ export interface FileRoutesById {
   '/invite/$token': typeof InviteTokenRoute
   '/settings/auth': typeof SettingsAuthRoute
   '/settings/cloudflare': typeof SettingsCloudflareRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
   '/api/cli/$': typeof ApiCliSplatRoute
   '/api/cli/stream': typeof ApiCliStreamRoute
   '/api/public/bridge-daemon': typeof ApiPublicBridgeDaemonRoute
@@ -364,6 +373,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/settings/auth'
     | '/settings/cloudflare'
+    | '/settings/integrations'
     | '/api/cli/$'
     | '/api/cli/stream'
     | '/api/public/bridge-daemon'
@@ -401,6 +411,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/settings/auth'
     | '/settings/cloudflare'
+    | '/settings/integrations'
     | '/api/cli/$'
     | '/api/cli/stream'
     | '/api/public/bridge-daemon'
@@ -438,6 +449,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/settings/auth'
     | '/settings/cloudflare'
+    | '/settings/integrations'
     | '/api/cli/$'
     | '/api/cli/stream'
     | '/api/public/bridge-daemon'
@@ -476,6 +488,7 @@ export interface RootRouteChildren {
   InviteTokenRoute: typeof InviteTokenRoute
   SettingsAuthRoute: typeof SettingsAuthRoute
   SettingsCloudflareRoute: typeof SettingsCloudflareRoute
+  SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
   ApiCliSplatRoute: typeof ApiCliSplatRoute
   ApiCliStreamRoute: typeof ApiCliStreamRoute
   ApiPublicBridgeDaemonRoute: typeof ApiPublicBridgeDaemonRoute
@@ -616,6 +629,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/integrations': {
+      id: '/settings/integrations'
+      path: '/settings/integrations'
+      fullPath: '/settings/integrations'
+      preLoaderRoute: typeof SettingsIntegrationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/cloudflare': {
@@ -764,6 +784,7 @@ const rootRouteChildren: RootRouteChildren = {
   InviteTokenRoute: InviteTokenRoute,
   SettingsAuthRoute: SettingsAuthRoute,
   SettingsCloudflareRoute: SettingsCloudflareRoute,
+  SettingsIntegrationsRoute: SettingsIntegrationsRoute,
   ApiCliSplatRoute: ApiCliSplatRoute,
   ApiCliStreamRoute: ApiCliStreamRoute,
   ApiPublicBridgeDaemonRoute: ApiPublicBridgeDaemonRoute,
