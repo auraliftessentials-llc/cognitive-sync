@@ -15,6 +15,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { callBrain } from "@/lib/brain.server";
+import { dispatchWebhookEvent } from "@/lib/webhooks.server";
 
 const BodySchema = z.object({
   user_id: z.string().uuid(),
@@ -30,6 +31,7 @@ const BodySchema = z.object({
     .max(20)
     .optional(),
   metadata: z.record(z.string(), z.any()).optional(),
+  idempotency_key: z.string().min(8).max(120).optional(),
 });
 
 const SYSTEM_VOICE =
