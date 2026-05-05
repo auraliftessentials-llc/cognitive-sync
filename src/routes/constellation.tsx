@@ -174,6 +174,44 @@ function Constellation() {
         </div>
       </div>
 
+      {/* Operator command bar */}
+      <div className="glow-border rounded-xl p-4 mb-8 bg-card/40 backdrop-blur">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="h-4 w-4 text-cyan-400" />
+          <span className="text-[10px] tracking-[0.35em] uppercase text-muted-foreground">Operator command · Grok 4 + full chain</span>
+          <div className="ml-auto flex items-center gap-3 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <button onClick={() => setVoiceOn((v) => !v)} className={`inline-flex items-center gap-1 ${voiceOn ? "text-cyan-300" : ""}`}>
+              <Volume2 className="h-3 w-3" /> {voiceOn ? "voice on" : "voice off"}
+            </button>
+            <button onClick={() => setAutoProbe((v) => !v)} className={autoProbe ? "text-emerald-300" : ""}>
+              {autoProbe ? "auto-probe 60s" : "auto-probe off"}
+            </button>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Input
+            value={cmd}
+            onChange={(e) => setCmd(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); fireCommand(); } }}
+            placeholder="Operator, push Dominion to live · ship OMEGA Launch Mode · status of every node"
+            disabled={running}
+            className="bg-background/50"
+          />
+          <Button onClick={fireCommand} disabled={running || !cmd.trim()} className="bg-gradient-to-r from-cyan-500 via-blue-600 to-violet-600 text-white border-0">
+            <Send className={`h-4 w-4 mr-2 ${running ? "animate-pulse" : ""}`} />
+            {running ? "Routing…" : "Fire"}
+          </Button>
+        </div>
+        {lastOutput && (
+          <div className="mt-3 p-3 rounded-lg bg-background/40 border border-border/40">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+              {lastOutput.provider} · {lastOutput.model} · {lastOutput.latency}ms
+            </div>
+            <div className="text-sm whitespace-pre-wrap">{lastOutput.text}</div>
+          </div>
+        )}
+      </div>
+
       {/* Empty state */}
       {nodes.length === 0 && (
         <div className="glow-border rounded-xl p-10 text-center">
