@@ -339,6 +339,30 @@ function Constellation() {
                     </div>
                   )}
 
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    <button
+                      onClick={() => commandNode(node, "Run a full health and status report")}
+                      disabled={running}
+                      className="text-[10px] uppercase tracking-wider rounded-md border border-border/60 px-2 py-1 hover:border-cyan-400/60 hover:text-cyan-300 disabled:opacity-50"
+                    >
+                      <Activity className="h-3 w-3 inline mr-1" /> Status
+                    </button>
+                    <button
+                      onClick={() => commandNode(node, "Push to live and ship")}
+                      disabled={running}
+                      className="text-[10px] uppercase tracking-wider rounded-md border border-border/60 px-2 py-1 hover:border-emerald-400/60 hover:text-emerald-300 disabled:opacity-50"
+                    >
+                      <Rocket className="h-3 w-3 inline mr-1" /> Ship
+                    </button>
+                    <button
+                      onClick={() => commandNode(node, "Diagnose any failures, errors or blockers")}
+                      disabled={running}
+                      className="text-[10px] uppercase tracking-wider rounded-md border border-border/60 px-2 py-1 hover:border-amber-400/60 hover:text-amber-300 disabled:opacity-50"
+                    >
+                      <Zap className="h-3 w-3 inline mr-1" /> Diagnose
+                    </button>
+                  </div>
+
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground border-t border-border/40 pt-2 mt-2">
                     <span>
                       {node.last_health_at
