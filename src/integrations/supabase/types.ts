@@ -528,6 +528,104 @@ export type Database = {
         }
         Relationships: []
       }
+      command_webhook_deliveries: {
+        Row: {
+          attempt: number
+          command_id: string | null
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          event: string
+          http_status: number | null
+          id: string
+          payload: Json
+          response_body: string | null
+          status: string
+          user_id: string
+          webhook_id: string
+        }
+        Insert: {
+          attempt?: number
+          command_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          event: string
+          http_status?: number | null
+          id?: string
+          payload?: Json
+          response_body?: string | null
+          status?: string
+          user_id: string
+          webhook_id: string
+        }
+        Update: {
+          attempt?: number
+          command_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          event?: string
+          http_status?: number | null
+          id?: string
+          payload?: Json
+          response_body?: string | null
+          status?: string
+          user_id?: string
+          webhook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "command_webhook_deliveries_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "command_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      command_webhooks: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          events: string[]
+          id: string
+          last_delivery_at: string | null
+          last_status: string | null
+          name: string
+          secret: string
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          events?: string[]
+          id?: string
+          last_delivery_at?: string | null
+          last_status?: string | null
+          name: string
+          secret: string
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          events?: string[]
+          id?: string
+          last_delivery_at?: string | null
+          last_status?: string | null
+          name?: string
+          secret?: string
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
@@ -737,6 +835,7 @@ export type Database = {
           created_at: string
           error: string | null
           id: string
+          idempotency_key: string | null
           latency_ms: number | null
           metadata: Json
           result: Json | null
@@ -751,6 +850,7 @@ export type Database = {
           created_at?: string
           error?: string | null
           id?: string
+          idempotency_key?: string | null
           latency_ms?: number | null
           metadata?: Json
           result?: Json | null
@@ -765,6 +865,7 @@ export type Database = {
           created_at?: string
           error?: string | null
           id?: string
+          idempotency_key?: string | null
           latency_ms?: number | null
           metadata?: Json
           result?: Json | null
