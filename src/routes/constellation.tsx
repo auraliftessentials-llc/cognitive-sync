@@ -60,9 +60,24 @@ function Constellation() {
   const [autoProbe, setAutoProbe] = useState(true);
   const [voiceOn, setVoiceOn] = useState(true);
   const probeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mediaRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
 
-  const fireCommand = async () => {
-    const text = cmd.trim();
+  const playTts = async (text: string) => {
+    if (!voiceOn || !text) return;
+    try {
+      const v: any = await speak({ data: { text: String(text).slice(0, 800) } });
+      if (v?.ok && v.audio_base64) {
+        const audio = new Audio(`data:audio/mpeg;base64,${v.audio_base64}`);
+        audio.play().catch(() => {});
+      }
+    } catch { /* voice optional */ }
+  };
+
+  const fireCommand = async (override?: string) => {
+    const text = (override ?? cmd).trim();
     if (!text || running) return;
     setRunning(true);
     setLastOutput(null);
@@ -70,17 +85,9 @@ function Constellation() {
       const r: any = await runMerkabahCommand({ data: { command: text, source: "ui" } });
       if (r?.ok) {
         setLastOutput({ text: r.output, provider: r.provider, model: r.model, latency: r.latency_ms });
-        setCmd("");
+        if (!override) setCmd("");
         toast.success(`${r.provider} · ${r.latency_ms}ms`);
-        if (voiceOn && r.output) {
-          try {
-            const v: any = await speak({ data: { text: String(r.output).slice(0, 800) } });
-            if (v?.ok && v.audio_base64) {
-              const audio = new Audio(`data:audio/mpeg;base64,${v.audio_base64}`);
-              audio.play().catch(() => {});
-            }
-          } catch { /* voice optional */ }
-        }
+        playTts(r.output);
       } else {
         toast.error(r?.error ?? "Command failed");
       }
@@ -89,6 +96,56 @@ function Constellation() {
     } finally {
       setRunning(false);
     }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      chunksRef.current = [];
+      mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      mr.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        if (!blob.size) return;
+        setTranscribing(true);
+        try {
+          const buf = await blob.arrayBuffer();
+          const bytes = new Uint8Array(buf);
+          let bin = "";
+          for (let i = 0; i < bytes.length; i += 0x8000) {
+            bin += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 0x8000)));
+          }
+          const b64 = btoa(bin);
+          const t: any = await transcribe({ data: { audio_base64: b64, mime_type: "audio/webm" } });
+          if (t?.ok && t.text) {
+            setCmd(t.text);
+            await fireCommand(t.text);
+          } else {
+            toast.error(t?.error ?? "Transcription failed");
+          }
+        } finally {
+          setTranscribing(false);
+        }
+      };
+      mediaRef.current = mr;
+      mr.start();
+      setRecording(true);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Microphone blocked");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRef.current && recording) {
+      mediaRef.current.stop();
+      setRecording(false);
+    }
+  };
+
+  const commandNode = (node: ConstellationNode, verb: string) => {
+    const text = `${verb} for node "${node.name}" (${node.kind}${node.endpoint_url ? ` · ${node.endpoint_url}` : ""}). Give the single highest-leverage next move and exact commands.`;
+    fireCommand(text);
   };
 
   const load = async () => {
