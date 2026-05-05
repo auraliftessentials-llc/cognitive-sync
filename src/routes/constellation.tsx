@@ -4,7 +4,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Activity, Cloud, Bot, Server, Zap, RefreshCw, Sparkles, ExternalLink, Send, Volume2 } from "lucide-react";
+import { Activity, Cloud, Bot, Server, Zap, RefreshCw, Sparkles, ExternalLink, Send, Volume2, Mic, MicOff, Radio, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import {
   listConstellation,
@@ -13,7 +13,7 @@ import {
   type ConstellationNode,
 } from "@/lib/constellation.functions";
 import { runMerkabahCommand } from "@/lib/merkabah-command.functions";
-import { speak } from "@/lib/voice.functions";
+import { speak, transcribe } from "@/lib/voice.functions";
 
 export const Route = createFileRoute("/constellation")({
   component: () => (
