@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Activity, Cloud, Bot, Server, Zap, RefreshCw, Sparkles, ExternalLink } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Activity, Cloud, Bot, Server, Zap, RefreshCw, Sparkles, ExternalLink, Send, Volume2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   listConstellation,
@@ -11,6 +12,8 @@ import {
   probeAll,
   type ConstellationNode,
 } from "@/lib/constellation.functions";
+import { runMerkabahCommand } from "@/lib/merkabah-command.functions";
+import { speak } from "@/lib/voice.functions";
 
 export const Route = createFileRoute("/constellation")({
   component: () => (
@@ -51,6 +54,42 @@ function Constellation() {
   const [nodes, setNodes] = useState<ConstellationNode[]>([]);
   const [busy, setBusy] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [cmd, setCmd] = useState("");
+  const [running, setRunning] = useState(false);
+  const [lastOutput, setLastOutput] = useState<{ text: string; provider: string; model: string; latency: number } | null>(null);
+  const [autoProbe, setAutoProbe] = useState(true);
+  const [voiceOn, setVoiceOn] = useState(true);
+  const probeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fireCommand = async () => {
+    const text = cmd.trim();
+    if (!text || running) return;
+    setRunning(true);
+    setLastOutput(null);
+    try {
+      const r: any = await runMerkabahCommand({ data: { command: text, source: "ui" } });
+      if (r?.ok) {
+        setLastOutput({ text: r.output, provider: r.provider, model: r.model, latency: r.latency_ms });
+        setCmd("");
+        toast.success(`${r.provider} · ${r.latency_ms}ms`);
+        if (voiceOn && r.output) {
+          try {
+            const v: any = await speak({ data: { text: String(r.output).slice(0, 800) } });
+            if (v?.ok && v.audio_base64) {
+              const audio = new Audio(`data:audio/mpeg;base64,${v.audio_base64}`);
+              audio.play().catch(() => {});
+            }
+          } catch { /* voice optional */ }
+        }
+      } else {
+        toast.error(r?.error ?? "Command failed");
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Command failed");
+    } finally {
+      setRunning(false);
+    }
+  };
 
   const load = async () => {
     try {
@@ -87,6 +126,20 @@ function Constellation() {
     load();
   }, []);
 
+  useEffect(() => {
+    if (probeTimer.current) clearInterval(probeTimer.current);
+    if (autoProbe) {
+      probeTimer.current = setInterval(() => {
+        if (!busy) {
+          probeAll().then((r) => setNodes(r.nodes)).catch(() => {});
+        }
+      }, 60_000);
+    }
+    return () => {
+      if (probeTimer.current) clearInterval(probeTimer.current);
+    };
+  }, [autoProbe, busy]);
+
   const grouped = nodes.reduce<Record<string, ConstellationNode[]>>((acc, n) => {
     (acc[n.kind] ??= []).push(n);
     return acc;
@@ -119,6 +172,44 @@ function Constellation() {
             {busy ? "Probing…" : "Probe All Nodes"}
           </Button>
         </div>
+      </div>
+
+      {/* Operator command bar */}
+      <div className="glow-border rounded-xl p-4 mb-8 bg-card/40 backdrop-blur">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="h-4 w-4 text-cyan-400" />
+          <span className="text-[10px] tracking-[0.35em] uppercase text-muted-foreground">Operator command · Grok 4 + full chain</span>
+          <div className="ml-auto flex items-center gap-3 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <button onClick={() => setVoiceOn((v) => !v)} className={`inline-flex items-center gap-1 ${voiceOn ? "text-cyan-300" : ""}`}>
+              <Volume2 className="h-3 w-3" /> {voiceOn ? "voice on" : "voice off"}
+            </button>
+            <button onClick={() => setAutoProbe((v) => !v)} className={autoProbe ? "text-emerald-300" : ""}>
+              {autoProbe ? "auto-probe 60s" : "auto-probe off"}
+            </button>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Input
+            value={cmd}
+            onChange={(e) => setCmd(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); fireCommand(); } }}
+            placeholder="Operator, push Dominion to live · ship OMEGA Launch Mode · status of every node"
+            disabled={running}
+            className="bg-background/50"
+          />
+          <Button onClick={fireCommand} disabled={running || !cmd.trim()} className="bg-gradient-to-r from-cyan-500 via-blue-600 to-violet-600 text-white border-0">
+            <Send className={`h-4 w-4 mr-2 ${running ? "animate-pulse" : ""}`} />
+            {running ? "Routing…" : "Fire"}
+          </Button>
+        </div>
+        {lastOutput && (
+          <div className="mt-3 p-3 rounded-lg bg-background/40 border border-border/40">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+              {lastOutput.provider} · {lastOutput.model} · {lastOutput.latency}ms
+            </div>
+            <div className="text-sm whitespace-pre-wrap">{lastOutput.text}</div>
+          </div>
+        )}
       </div>
 
       {/* Empty state */}
