@@ -77,6 +77,33 @@ export const Route = createFileRoute("/api/public/merkabah-command")({
           );
         }
 
+        // Idempotency check
+        if (parsed.idempotency_key) {
+          const { data: existing } = await supabaseAdmin
+            .from("merkabah_commands")
+            .select("id,status,result,winner,latency_ms,error,command")
+            .eq("user_id", parsed.user_id)
+            .eq("idempotency_key", parsed.idempotency_key)
+            .maybeSingle();
+          if (existing) {
+            return new Response(
+              JSON.stringify({
+                ok: existing.status !== "error",
+                id: existing.id,
+                status: existing.status,
+                command: existing.command,
+                output: existing.result?.output ?? "",
+                provider: existing.result?.provider ?? existing.winner ?? "",
+                model: existing.result?.model ?? "",
+                latency_ms: existing.latency_ms ?? 0,
+                error: existing.error ?? undefined,
+                idempotent_replay: true,
+              }),
+              { status: 200, headers: { ...CORS, "Content-Type": "application/json" } },
+            );
+          }
+        }
+
         const startedAt = Date.now();
         const { data: row, error: insertErr } = await supabaseAdmin
           .from("merkabah_commands")
@@ -86,6 +113,7 @@ export const Route = createFileRoute("/api/public/merkabah-command")({
             command: parsed.command,
             status: "executing",
             metadata: parsed.metadata ?? {},
+            idempotency_key: parsed.idempotency_key ?? null,
           })
           .select("id")
           .single();
