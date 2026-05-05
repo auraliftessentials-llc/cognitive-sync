@@ -17,6 +17,7 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LegalRouteImport } from './routes/legal'
 import { Route as GithubRouteImport } from './routes/github'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as ConstellationRouteImport } from './routes/constellation'
 import { Route as ConsoleRouteImport } from './routes/console'
 import { Route as CommandsRouteImport } from './routes/commands'
 import { Route as ChatRouteImport } from './routes/chat'
@@ -82,6 +83,11 @@ const GithubRoute = GithubRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConstellationRoute = ConstellationRouteImport.update({
+  id: '/constellation',
+  path: '/constellation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConsoleRoute = ConsoleRouteImport.update({
@@ -230,6 +236,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof ChatRoute
   '/commands': typeof CommandsRoute
   '/console': typeof ConsoleRoute
+  '/constellation': typeof ConstellationRoute
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
   '/legal': typeof LegalRoute
@@ -266,6 +273,7 @@ export interface FileRoutesByTo {
   '/chat': typeof ChatRoute
   '/commands': typeof CommandsRoute
   '/console': typeof ConsoleRoute
+  '/constellation': typeof ConstellationRoute
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
   '/legal': typeof LegalRoute
@@ -303,6 +311,7 @@ export interface FileRoutesById {
   '/chat': typeof ChatRoute
   '/commands': typeof CommandsRoute
   '/console': typeof ConsoleRoute
+  '/constellation': typeof ConstellationRoute
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
   '/legal': typeof LegalRoute
@@ -341,6 +350,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/commands'
     | '/console'
+    | '/constellation'
     | '/dashboard'
     | '/github'
     | '/legal'
@@ -377,6 +387,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/commands'
     | '/console'
+    | '/constellation'
     | '/dashboard'
     | '/github'
     | '/legal'
@@ -413,6 +424,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/commands'
     | '/console'
+    | '/constellation'
     | '/dashboard'
     | '/github'
     | '/legal'
@@ -450,6 +462,7 @@ export interface RootRouteChildren {
   ChatRoute: typeof ChatRoute
   CommandsRoute: typeof CommandsRoute
   ConsoleRoute: typeof ConsoleRoute
+  ConstellationRoute: typeof ConstellationRoute
   DashboardRoute: typeof DashboardRoute
   GithubRoute: typeof GithubRoute
   LegalRoute: typeof LegalRoute
@@ -533,6 +546,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/constellation': {
+      id: '/constellation'
+      path: '/constellation'
+      fullPath: '/constellation'
+      preLoaderRoute: typeof ConstellationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/console': {
@@ -730,6 +750,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChatRoute: ChatRoute,
   CommandsRoute: CommandsRoute,
   ConsoleRoute: ConsoleRoute,
+  ConstellationRoute: ConstellationRoute,
   DashboardRoute: DashboardRoute,
   GithubRoute: GithubRoute,
   LegalRoute: LegalRoute,
