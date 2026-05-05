@@ -15,6 +15,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { callBrain } from "@/lib/brain.server";
+import { dispatchWebhookEvent } from "@/lib/webhooks.server";
 
 const BodySchema = z.object({
   user_id: z.string().uuid(),
@@ -30,6 +31,7 @@ const BodySchema = z.object({
     .max(20)
     .optional(),
   metadata: z.record(z.string(), z.any()).optional(),
+  idempotency_key: z.string().min(8).max(120).optional(),
 });
 
 const SYSTEM_VOICE =
@@ -75,6 +77,34 @@ export const Route = createFileRoute("/api/public/merkabah-command")({
           );
         }
 
+        // Idempotency check
+        if (parsed.idempotency_key) {
+          const { data: existing } = await supabaseAdmin
+            .from("merkabah_commands")
+            .select("id,status,result,winner,latency_ms,error,command")
+            .eq("user_id", parsed.user_id)
+            .eq("idempotency_key", parsed.idempotency_key)
+            .maybeSingle();
+          if (existing) {
+            const result = (existing.result ?? {}) as { output?: string; provider?: string; model?: string };
+            return new Response(
+              JSON.stringify({
+                ok: existing.status !== "error",
+                id: existing.id,
+                status: existing.status,
+                command: existing.command,
+                output: result.output ?? "",
+                provider: result.provider ?? existing.winner ?? "",
+                model: result.model ?? "",
+                latency_ms: existing.latency_ms ?? 0,
+                error: existing.error ?? undefined,
+                idempotent_replay: true,
+              }),
+              { status: 200, headers: { ...CORS, "Content-Type": "application/json" } },
+            );
+          }
+        }
+
         const startedAt = Date.now();
         const { data: row, error: insertErr } = await supabaseAdmin
           .from("merkabah_commands")
@@ -84,6 +114,7 @@ export const Route = createFileRoute("/api/public/merkabah-command")({
             command: parsed.command,
             status: "executing",
             metadata: parsed.metadata ?? {},
+            idempotency_key: parsed.idempotency_key ?? null,
           })
           .select("id")
           .single();
@@ -122,6 +153,13 @@ export const Route = createFileRoute("/api/public/merkabah-command")({
             })
             .eq("id", commandId);
 
+          dispatchWebhookEvent({
+            userId: parsed.user_id,
+            commandId,
+            event: "command.complete",
+            payload: { command: parsed.command, output, provider: brain.provider, model: brain.model, latency_ms: latency, source: parsed.source },
+          }).catch((err) => console.error("webhook dispatch failed", err));
+
           return new Response(
             JSON.stringify({
               ok: true,
@@ -145,6 +183,14 @@ export const Route = createFileRoute("/api/public/merkabah-command")({
               latency_ms: Date.now() - startedAt,
             })
             .eq("id", commandId);
+
+          dispatchWebhookEvent({
+            userId: parsed.user_id,
+            commandId,
+            event: "command.error",
+            payload: { command: parsed.command, error: errMsg, source: parsed.source },
+          }).catch((err) => console.error("webhook dispatch failed", err));
+
           return new Response(
             JSON.stringify({ ok: false, id: commandId, status: "error", error: errMsg }),
             { status: 500, headers: { ...CORS, "Content-Type": "application/json" } },

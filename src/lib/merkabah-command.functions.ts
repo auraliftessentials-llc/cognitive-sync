@@ -11,6 +11,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { callBrain } from "./brain.server";
+import { dispatchWebhookEvent } from "./webhooks.server";
 
 const InputSchema = z.object({
   command: z.string().min(1).max(8000),
@@ -25,6 +26,7 @@ const InputSchema = z.object({
     .max(20)
     .optional(),
   metadata: z.record(z.string(), z.any()).optional(),
+  idempotency_key: z.string().min(8).max(120).optional(),
 });
 
 const SYSTEM_VOICE =
@@ -37,6 +39,30 @@ export const runMerkabahCommand = createServerFn({ method: "POST" })
     const { supabase, userId } = context as any;
     const startedAt = Date.now();
 
+    // 0. Idempotency: short-circuit if a row with this key already exists.
+    if (data.idempotency_key) {
+      const { data: existing } = await supabase
+        .from("merkabah_commands")
+        .select("id,status,result,winner,latency_ms,error,command")
+        .eq("user_id", userId)
+        .eq("idempotency_key", data.idempotency_key)
+        .maybeSingle();
+      if (existing) {
+        return {
+          ok: existing.status !== "error",
+          id: existing.id,
+          status: existing.status,
+          command: existing.command,
+          output: existing.result?.output ?? "",
+          provider: existing.result?.provider ?? existing.winner ?? "",
+          model: existing.result?.model ?? "",
+          latency_ms: existing.latency_ms ?? 0,
+          error: existing.error ?? undefined,
+          idempotent_replay: true,
+        };
+      }
+    }
+
     // 1. Log the command immediately so the UI can react.
     const { data: row, error: insertErr } = await supabase
       .from("merkabah_commands")
@@ -46,6 +72,7 @@ export const runMerkabahCommand = createServerFn({ method: "POST" })
         command: data.command,
         status: "executing",
         metadata: data.metadata ?? {},
+        idempotency_key: data.idempotency_key ?? null,
       })
       .select("id")
       .single();
@@ -82,6 +109,14 @@ export const runMerkabahCommand = createServerFn({ method: "POST" })
         })
         .eq("id", commandId);
 
+      // Fire-and-forget webhook dispatch
+      dispatchWebhookEvent({
+        userId,
+        commandId,
+        event: "command.complete",
+        payload: { command: data.command, output, provider: brain.provider, model: brain.model, latency_ms: latency, source: data.source },
+      }).catch((err) => console.error("webhook dispatch failed", err));
+
       return {
         ok: true,
         id: commandId,
@@ -102,6 +137,14 @@ export const runMerkabahCommand = createServerFn({ method: "POST" })
           latency_ms: Date.now() - startedAt,
         })
         .eq("id", commandId);
+
+      dispatchWebhookEvent({
+        userId,
+        commandId,
+        event: "command.error",
+        payload: { command: data.command, error: errMsg, source: data.source },
+      }).catch((err) => console.error("webhook dispatch failed", err));
+
       return {
         ok: false,
         id: commandId,
