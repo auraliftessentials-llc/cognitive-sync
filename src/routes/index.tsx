@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Brain, Sparkles, GitBranch, MessageSquare, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConnectMacBookButton } from "@/components/ConnectMacBookButton";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -30,6 +31,10 @@ function Landing() {
           <Button variant="outline" size="sm">Sign in</Button>
         </Link>
       </header>
+
+      <div className="relative z-10 max-w-6xl mx-auto px-6 -mt-2 flex justify-end">
+        <ConnectMacBookButton />
+      </div>
 
       <main className="relative z-10 max-w-4xl mx-auto px-6 pt-20 pb-32">
         <div className="flex items-center gap-2 mb-6 animate-fade-in-up">
