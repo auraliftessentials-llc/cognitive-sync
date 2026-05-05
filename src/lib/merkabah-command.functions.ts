@@ -11,6 +11,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { callBrain } from "./brain.server";
+import { dispatchWebhookEvent } from "./webhooks.server";
 
 const InputSchema = z.object({
   command: z.string().min(1).max(8000),
@@ -25,6 +26,7 @@ const InputSchema = z.object({
     .max(20)
     .optional(),
   metadata: z.record(z.string(), z.any()).optional(),
+  idempotency_key: z.string().min(8).max(120).optional(),
 });
 
 const SYSTEM_VOICE =
