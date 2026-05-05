@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Brain, Sparkles, GitBranch, MessageSquare, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConnectMacBookButton } from "@/components/ConnectMacBookButton";
 
 export const Route = createFileRoute("/")({
   component: Landing,
