@@ -86,15 +86,16 @@ export const Route = createFileRoute("/api/public/merkabah-command")({
             .eq("idempotency_key", parsed.idempotency_key)
             .maybeSingle();
           if (existing) {
+            const result = (existing.result ?? {}) as { output?: string; provider?: string; model?: string };
             return new Response(
               JSON.stringify({
                 ok: existing.status !== "error",
                 id: existing.id,
                 status: existing.status,
                 command: existing.command,
-                output: existing.result?.output ?? "",
-                provider: existing.result?.provider ?? existing.winner ?? "",
-                model: existing.result?.model ?? "",
+                output: result.output ?? "",
+                provider: result.provider ?? existing.winner ?? "",
+                model: result.model ?? "",
                 latency_ms: existing.latency_ms ?? 0,
                 error: existing.error ?? undefined,
                 idempotent_replay: true,
