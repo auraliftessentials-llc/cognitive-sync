@@ -153,6 +153,13 @@ export const Route = createFileRoute("/api/public/merkabah-command")({
             })
             .eq("id", commandId);
 
+          dispatchWebhookEvent({
+            userId: parsed.user_id,
+            commandId,
+            event: "command.complete",
+            payload: { command: parsed.command, output, provider: brain.provider, model: brain.model, latency_ms: latency, source: parsed.source },
+          }).catch((err) => console.error("webhook dispatch failed", err));
+
           return new Response(
             JSON.stringify({
               ok: true,
@@ -176,6 +183,14 @@ export const Route = createFileRoute("/api/public/merkabah-command")({
               latency_ms: Date.now() - startedAt,
             })
             .eq("id", commandId);
+
+          dispatchWebhookEvent({
+            userId: parsed.user_id,
+            commandId,
+            event: "command.error",
+            payload: { command: parsed.command, error: errMsg, source: parsed.source },
+          }).catch((err) => console.error("webhook dispatch failed", err));
+
           return new Response(
             JSON.stringify({ ok: false, id: commandId, status: "error", error: errMsg }),
             { status: 500, headers: { ...CORS, "Content-Type": "application/json" } },
