@@ -757,6 +757,36 @@ export type Database = {
         }
         Relationships: []
       }
+      identity_links: {
+        Row: {
+          created_at: string
+          id: string
+          linked_email: string
+          linked_provider: string
+          linked_user_id: string
+          primary_user_id: string
+          verified_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          linked_email: string
+          linked_provider?: string
+          linked_user_id: string
+          primary_user_id: string
+          verified_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          linked_email?: string
+          linked_provider?: string
+          linked_user_id?: string
+          primary_user_id?: string
+          verified_at?: string
+        }
+        Relationships: []
+      }
       infra_resources: {
         Row: {
           created_at: string
@@ -1602,6 +1632,7 @@ export type Database = {
         Returns: boolean
       }
       release_schedule: { Args: { _id: string }; Returns: undefined }
+      resolve_operator_identity: { Args: { _user_id: string }; Returns: string }
       workspace_role_of: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: Database["public"]["Enums"]["workspace_role"]
