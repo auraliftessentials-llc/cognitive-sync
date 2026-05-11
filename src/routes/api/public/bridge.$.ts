@@ -16,6 +16,7 @@
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { isQuietMode } from "@/lib/quiet-mode.server";
 import crypto from "crypto";
 
 function json(body: unknown, status = 200) {
@@ -107,6 +108,11 @@ export const Route = createFileRoute("/api/public/bridge/$")({
         }
 
         if (path === "event") {
+          // Quiet Mode: acknowledge the event so the daemon doesn't retry-spam,
+          // but don't persist it. Nothing the brain saw will act on it.
+          if (await isQuietMode()) {
+            return json({ ok: true, paused: true, reason: "quiet_mode" });
+          }
           let body: any = {};
           try { body = await request.json(); } catch { /* tolerate */ }
           const action = String(body?.action ?? "unknown").slice(0, 40);

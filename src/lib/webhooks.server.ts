@@ -7,6 +7,7 @@
  * delivery fails. Errors are captured in the delivery row instead.
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { isQuietMode } from "@/lib/quiet-mode.server";
 import crypto from "crypto";
 
 type WebhookEvent = "command.complete" | "command.error" | "command.executing";
@@ -18,6 +19,8 @@ export async function dispatchWebhookEvent(args: {
   commandId?: string;
   onlyWebhookId?: string;
 }) {
+  // Quiet Mode: don't fan out to the world while the Operator is thinking.
+  if (await isQuietMode()) return { delivered: 0, failed: 0, paused: true as const };
   try {
     let q = supabaseAdmin
       .from("command_webhooks")

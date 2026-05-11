@@ -14,6 +14,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { runScheduleOnce } from "@/lib/schedule-runner.server";
+import { isQuietMode } from "@/lib/quiet-mode.server";
 
 function cronMatches(expr: string, now: Date): boolean {
   const fields = expr.trim().split(/\s+/);
@@ -51,6 +52,19 @@ export const Route = createFileRoute("/hooks/run-cli-schedules")({
         const auth = request.headers.get("authorization") ?? "";
         if (!auth.startsWith("Bearer ")) {
           return new Response(JSON.stringify({ error: "missing auth" }), { status: 401 });
+        }
+
+        // Quiet Mode: skip the tick entirely. Heartbeat still fires so the
+        // dashboard can prove cron is alive and paused (not dead).
+        if (await isQuietMode()) {
+          await supabaseAdmin.from("cron_heartbeat").insert({
+            job: "run-cli-schedules", due_count: 0, ran_count: 0,
+            error_count: 0, duration_ms: Date.now() - t0,
+            notes: "quiet_mode: paused by Operator",
+          });
+          return new Response(JSON.stringify({ ok: true, paused: true, reason: "quiet_mode" }), {
+            headers: { "Content-Type": "application/json" },
+          });
         }
 
         const now = new Date();
