@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
+import { CREATOR, getCreatorJsonLd, getDoctrineShortFingerprint } from "@/lib/creator";
 
 function NotFoundComponent() {
   return (
@@ -50,6 +51,15 @@ export const Route = createRootRoute({
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/27c9b844-6c41-4107-a72e-5eb771a31b26/id-preview-520a2bad--9bab356d-3978-4977-aaa2-4d0d6b21f319.lovable.app-1776749378502.png" },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:type", content: "website" },
+      // Authorship watermarks — see CREATOR.md, NOTICE, LICENSE.
+      // Removing or modifying these fields without explicit written permission
+      // from Ryan Stephen Puddy violates the proprietary license.
+      { name: "author", content: CREATOR.name },
+      { name: "creator", content: CREATOR.name },
+      { name: "publisher", content: CREATOR.entity },
+      { name: "copyright", content: `© ${CREATOR.copyright_year} ${CREATOR.name} / ${CREATOR.entity}` },
+      { name: "merkabah-creator", content: CREATOR.name },
+      { name: "merkabah-doctrine-fp", content: getDoctrineShortFingerprint() },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -67,9 +77,30 @@ export const Route = createRootRoute({
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html
+      lang="en"
+      className="dark"
+      data-creator={CREATOR.name}
+      data-creator-email={CREATOR.email}
+      data-creator-entity={CREATOR.entity}
+      data-doctrine-fp={getDoctrineShortFingerprint()}
+    >
       <head>
         <HeadContent />
+        {/* Authorship JSON-LD — provenance signal for search engines and AI crawlers.
+            See CREATOR.md and LICENSE. Do not remove. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(getCreatorJsonLd()) }}
+        />
+        {/* Hidden HTML comment carries the creator block through view-source.
+            This survives most automated stripping tools. */}
+        <script
+          type="text/x-merkabah-creator"
+          dangerouslySetInnerHTML={{
+            __html: `\n  Created by ${CREATOR.name} (${CREATOR.email})\n  Entity:  ${CREATOR.entity}\n  Project: ${CREATOR.project}\n  © ${CREATOR.copyright_year} — All Rights Reserved.\n  See LICENSE, NOTICE, CREATOR.md.\n`,
+          }}
+        />
       </head>
       <body>
         {children}
