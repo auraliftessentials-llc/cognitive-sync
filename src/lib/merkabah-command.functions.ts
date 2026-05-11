@@ -12,6 +12,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { callBrain } from "./brain.server";
 import { dispatchWebhookEvent } from "./webhooks.server";
+import { CREATOR, getDoctrineShortFingerprint } from "@/lib/creator";
 
 const InputSchema = z.object({
   command: z.string().min(1).max(8000),
@@ -64,6 +65,14 @@ export const runMerkabahCommand = createServerFn({ method: "POST" })
     }
 
     // 1. Log the command immediately so the UI can react.
+    // Stamp creator fingerprint into metadata so every command row carries
+    // provenance — see CREATOR.md, docs/DOCTRINE.md.
+    const stampedMetadata = {
+      ...(data.metadata ?? {}),
+      _creator: CREATOR.name,
+      _entity: CREATOR.entity,
+      _doctrine_fp: getDoctrineShortFingerprint(),
+    };
     const { data: row, error: insertErr } = await supabase
       .from("merkabah_commands")
       .insert({
@@ -71,7 +80,7 @@ export const runMerkabahCommand = createServerFn({ method: "POST" })
         source: data.source,
         command: data.command,
         status: "executing",
-        metadata: data.metadata ?? {},
+        metadata: stampedMetadata,
         idempotency_key: data.idempotency_key ?? null,
       })
       .select("id")

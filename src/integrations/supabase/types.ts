@@ -661,6 +661,39 @@ export type Database = {
           },
         ]
       }
+      creator_milestones: {
+        Row: {
+          commit_sha: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          fingerprint: string | null
+          id: string
+          occurred_at: string
+          title: string
+        }
+        Insert: {
+          commit_sha?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fingerprint?: string | null
+          id?: string
+          occurred_at?: string
+          title: string
+        }
+        Update: {
+          commit_sha?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fingerprint?: string | null
+          id?: string
+          occurred_at?: string
+          title?: string
+        }
+        Relationships: []
+      }
       cron_heartbeat: {
         Row: {
           due_count: number
@@ -1042,6 +1075,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      provenance_events: {
+        Row: {
+          actor: string | null
+          created_at: string
+          event: string
+          id: string
+          ip: string | null
+          metadata: Json
+          target: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          actor?: string | null
+          created_at?: string
+          event: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          target?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          actor?: string | null
+          created_at?: string
+          event?: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          target?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
       }
       roadmap_progress: {
         Row: {
