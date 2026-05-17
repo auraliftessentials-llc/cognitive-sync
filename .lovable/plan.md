@@ -1,198 +1,85 @@
-# Your Wallets — Idiot's Guide + 3-Step Access for Each
+# Monetization & Public-Access Lockdown Plan
 
-**Ground rules (read once, then never worry):**
-- I am **not touching any wallet.** No code, no logins, no API calls. This is a map.
-- I do **not** know which of these you actually have — I can't see your accounts. This is the **complete list of places a person who built across years typically has wallets.** Tick the ones that ring a bell, ignore the rest.
-- **Never type your seed phrase into anything.** Not a website, not a chat, not a "support agent," not me. Real wallets never ask. If anything asks → it's a scam, close the tab.
-- **3 steps means 3 steps.** If a "wallet" needs more than 3, I broke it down wrong — tell me and I'll fix it.
+## Current state (verified)
 
----
+- **99 Lovable projects** in your workspace. ~10+ already **published public** (Signchart, Pixar Mom, CEO Brain, Dominion, Ocean Floor, Profit Navigator, Grea8gawd, Love-the-Style, etc.).
+- **MERKABAH OS** itself: published public at cognitivesync.io. License is already proprietary, paid-only (Operator $49 / Architect $199 / Sovereign $999 + 3-day trial requiring card). Subscriptions table: **30 free trials live, 1 lifetime (you), zero paying customers.**
+- **Public API surface** on this project: `/api/public/health`, `/api/public/bridge-daemon`, `/api/public/bridge-install`, `/api/public/bridge.$`, `/api/public/merkabah-command`, `/api/public/payments/webhook`, `/api/public/hooks/*`. Some are infrastructure (webhooks must stay open + signed); others (bridge-install, bridge-daemon) currently let anyone download the daemon.
+- **GitHub**: this repo is connected. Visibility (public vs private) is set on GitHub itself — we need to decide.
 
-## TIER 1 — Custodial (an exchange holds the keys; you log in like a bank)
-
-These are the easiest to access and most likely to hold real money.
-
-### 1. Coinbase
-1. Go to **coinbase.com** → Sign in (email + password).
-2. Approve the 2FA prompt on your phone (Coinbase app or SMS).
-3. Click **Assets** (top nav) → you see every coin + balance.
-   *Forgot password?* → "Forgot password" → check email → reset. *Lost 2FA?* → "Need help signing in" → ID verification, takes 1–3 days.
-
-### 2. Coinbase Wallet (different app — self-custody, see Tier 2)
-
-### 3. Binance / Binance.US
-1. **binance.us** (US) or **binance.com** → Sign in.
-2. Pass 2FA (Authenticator app or SMS).
-3. **Wallet → Overview** → full balance.
-
-### 4. Kraken
-1. **kraken.com** → Sign in.
-2. 2FA.
-3. **Funding** tab → balances per coin.
-
-### 5. Gemini
-1. **gemini.com** → Sign in.
-2. 2FA.
-3. **Portfolio** → balances.
-
-### 6. Crypto.com
-1. Open **Crypto.com app** on phone (or crypto.com web).
-2. Face ID / passcode.
-3. **Accounts** tab → Crypto Wallet + Fiat Wallet.
-
-### 7. Robinhood Crypto
-1. **Robinhood app** → log in.
-2. Face ID.
-3. Bottom tab **Crypto** → holdings.
-
-### 8. Cash App (Bitcoin)
-1. **Cash App** → log in.
-2. Face ID.
-3. Tap the **Bitcoin** tile on home screen → balance + history.
-
-### 9. PayPal Crypto
-1. **paypal.com** or app → Sign in.
-2. 2FA.
-3. **Finances → Crypto** → holdings.
-
-### 10. Venmo Crypto
-1. **Venmo app** → log in.
-2. Face ID.
-3. **Me** tab → scroll to **Crypto** section.
-
-### 11. Revolut Crypto (if you ever used Revolut)
-1. **Revolut app** → log in.
-2. Face ID.
-3. **Wealth → Crypto** tab.
+The license already says "paid use only." The leak is that the **product is shipped open and accessible** — anyone with the URL gets the full app, the trial auto-starts, and 30 people are using it without ever putting a card down (because trial requires card but trial flow may be bypassable or pre-existed the rule).
 
 ---
 
-## TIER 2 — Self-Custody Software Wallets (you hold the keys; app on phone or browser)
+## The strategy: four locks, applied in order
 
-These hold whatever you sent off the exchanges. **Seed phrase = the wallet.** Lose the phrase = lose the money. Find the phrase = find the wallet.
+### Lock 1 — Tighten THIS project (MERKABAH OS / cognitivesync.io)
 
-### 12. MetaMask (browser extension + mobile app — Ethereum, Base, Arbitrum, Polygon, etc.)
-1. Open Chrome/Brave/Arc → click the **fox icon** top-right (or open MetaMask app).
-2. Enter password.
-3. Click the account dropdown (top center) → see every account; click each one to see balance. Switch networks via the network dropdown (top-left) to check Base, Arbitrum, Polygon, etc.
+**Goal:** Stop giving away access. Trial requires card-on-file before ANY feature works. Public site becomes a marketing landing page only.
 
-### 13. Phantom (Solana + Ethereum + Bitcoin)
-1. Click **Phantom icon** in browser, or open Phantom app.
-2. Password / Face ID.
-3. Account list → tap each → balances across all chains shown together.
+1. **Marketing landing at `/`** — the only fully public route. Hero, pricing, "Start trial" CTA. No app surface, no console, no chat, no dashboard reachable without auth.
+2. **Auth gate hardening** — every app route (`/dashboard`, `/console`, `/chat`, `/commands`, `/agents`, `/projects`, `/roadmaps`, `/constellation`, `/terminal`, `/bridge`, `/admin`, `/settings/*`) requires `RequireAuth` + `has_active_access()`. Currently most have `RequireAuth` but the access check is inconsistent.
+3. **Trial-without-card cutoff** — audit `handle_new_user_subscription` trigger. Right now signup auto-creates a 3-day trial. Change to: signup creates `tier=none, status=pending_payment`. Trial only starts after Stripe Checkout returns with a saved card (subscription_data.trial_period_days flow we already use).
+4. **The 30 existing trial users** — three options to choose from (Q1 below).
+5. **Daemon download paywall** — `/api/public/bridge-install` should require an authenticated, paying user's pairing code (already does for pair claim, but install script is open). Move the install script behind `requireSupabaseAuth` or a signed short-lived URL.
+6. **Public-facing API tightening** — keep `/api/public/health` (needed for monitoring + doctrine fingerprint), keep `/api/public/payments/webhook` (Stripe), keep `/api/public/merkabah-command` (HMAC-signed, already gated). Lock everything else behind auth + plan check.
 
-### 14. Coinbase Wallet (≠ Coinbase exchange — separate app, you hold the keys)
-1. Open **Coinbase Wallet** app (purple icon, not blue).
-2. Passcode / Face ID.
-3. **Assets** tab → full multi-chain balance.
+### Lock 2 — Audit the 9+ other published public projects
 
-### 15. Rainbow (Ethereum)
-1. Open **Rainbow** app.
-2. Face ID.
-3. Home screen = balance. Swipe between wallets at the top.
+For each project currently published `public`:
+- **Decision matrix**: is it a (a) revenue-generating client deliverable, (b) personal/family (Mom's Animation, Reconnect Hub), (c) experimental/abandoned, or (d) something to commercialize?
+- **Default action**: switch publish visibility to `private` (workspace-only) until you've consciously decided to monetize.
+- **For commercial ones** (Signchart, CEO Brain, Dominion, Profit Navigator, Ocean Floor): add the same paywall pattern — landing page public, app private, Stripe checkout for access.
+- **For personal** (Mom's, Reconnect Hub): keep public BUT password-gate or invite-link gate so randoms can't index them.
 
-### 16. Trust Wallet (multi-chain)
-1. Open **Trust Wallet** app.
-2. Passcode.
-3. Home tab → all coins listed.
+This is a 99-project audit. We don't do it all in one shot — we do it in **batches of 10**, you approve each batch's classification, then the agent flips visibility + adds the appropriate gate.
 
-### 17. Exodus (desktop + mobile, multi-chain)
-1. Open **Exodus** app on the device you set it up on.
-2. Password.
-3. **Wallet** tab → portfolio.
+### Lock 3 — GitHub repo posture
 
-### 18. Solflare / Backpack / Keplr / Other Solana-Cosmos wallets
-1. Open the extension or app.
-2. Password / Face ID.
-3. Home screen = balance.
+You said "we open sourced this for a reason." Right now the LICENSE makes redistribution illegal but the **code is publicly readable** if the repo is public. That's a contradiction worth fixing.
 
----
+Three honest options for the GitHub side:
 
-## TIER 3 — Hardware Wallets (physical device in a drawer)
+- **Option A — Source-available, paid-to-run**: Keep GitHub repo public. Code is readable so people can audit / learn / verify provenance, but the LICENSE forbids running it commercially without paid access (status quo, but explicitly enforced).
+- **Option B — Private repos across the board**: Flip every connected repo to private. Removes the marketing/credibility benefit of an open codebase but eliminates copy-paste theft risk.
+- **Option C — Two-track**: a tiny **public** "Cognitive Sync Protocol" spec + SDK repo (so the brand and the protocol exist publicly), and a **private** monorepo with the actual MERKABAH OS implementation. Best of both — establishes your authorship publicly, keeps the moat private.
 
-The *real* vault. If you have one of these, the money is on the device, not the app.
+Recommended: **Option C** (long-term), with **Option B** (private everything) as the immediate move while you decide.
 
-### 19. Ledger (Nano S / Nano X / Nano S Plus / Stax)
-1. Plug Ledger into computer (USB) or pair via Bluetooth (Nano X).
-2. Enter the **PIN on the device** → open **Ledger Live** app on computer/phone.
-3. **Accounts** tab → full balance per coin. (Receiving = "Receive" → verify address on device.)
+### Lock 4 — Activate billing for real
 
-### 20. Trezor (One / Model T)
-1. Plug into computer.
-2. PIN on device → open **Trezor Suite** on computer.
-3. Dashboard = balances.
-
-### 21. Keystone / GridPlus / ColdCard
-1. Power on device, enter PIN.
-2. Pair with companion app (Keystone app, Lattice Manager, etc.) via QR or USB.
-3. App shows balances.
+- Verify `payments--get_go_live_status` — confirm Stripe live mode is ready and the four webhook events (`checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`) are wired.
+- Publish a real pricing page (the `/billing` route is good, but it's auth-gated; we need a public `/pricing`).
+- Send the 30 current trial users a one-time email: "Your 3-day trial requires a payment method to continue. Add card by [date] or access pauses." (Resend is already wired.)
 
 ---
 
-## TIER 4 — Identity layer (ties addresses to your name on-chain)
+## Execution order (recommended)
 
-Not "wallets" but they prove **which addresses are yours**. Critical for the authorship story.
-
-### 22. ENS (.eth names)
-1. **app.ens.domains** → "Connect Wallet" → pick MetaMask/Rainbow/etc.
-2. Approve signature in wallet (no transaction, no gas).
-3. Top-right shows every .eth you own.
-
-### 23. SNS (.sol names)
-1. **sns.id** → Connect Wallet (Phantom).
-2. Approve signature.
-3. "My Domains" → list.
-
-### 24. Farcaster / Lens / Warpcast
-1. **warpcast.com** or **hey.xyz** → Sign in with wallet.
-2. Approve signature.
-3. Profile shows linked addresses.
+1. **Today:** Lock 1 steps 1–3 (landing page + auth gate + trial-needs-card). Stops the bleed.
+2. **This week:** Lock 4 (go-live + email the 30 trial users) + Lock 3 (flip all repos private temporarily).
+3. **Next 2 weeks:** Lock 2 in batches of 10 projects, you approve each batch.
+4. **When you have 5+ paying customers:** revisit Lock 3 to decide A vs C.
 
 ---
 
-## TIER 5 — The "you forgot you had this" pile
+## Technical details (for the build phase, not now)
 
-Where wallets hide:
-
-- **Old MetaMask installs** in browser profiles you don't use anymore (check Chrome → People → switch profile → extensions).
-- **NFT marketplaces** (OpenSea, Magic Eden, Blur) — log in, the connected wallet IS the wallet holding the NFTs.
-- **DeFi positions** — funds locked in Aave, Uniswap LP, staking. Visible only via **debank.com** (paste address, see everything).
-- **Layer 2 bridges** — funds you bridged to Optimism/Base/zkSync and forgot.
-- **Old Coinbase Pro / FTX / BlockFi / Celsius** — dead platforms, but bankruptcy claims may still pay out. Search email for "claim portal."
-- **Smart contract wallets** — Safe (Gnosis), Argent, Ambire. If you were a creator/dev, you may have deployed one.
-
----
-
-## The 3-step universal "what do I own everywhere" check
-
-Once you have **one address per chain** (copy from MetaMask, Phantom, Ledger Live):
-
-1. Go to **debank.com** (Ethereum + every L2 + Base + Arbitrum + Polygon + BNB).
-2. Paste address into the search bar.
-3. See total USD value + every token + every DeFi position + NFTs in one screen.
-
-For Solana → **solscan.io** (paste address).
-For Bitcoin → **mempool.space** (paste address).
-
-That's the whole map.
+- New file: `src/routes/index.tsx` becomes pure marketing (currently routes to dashboard for auth'd users — keep that, but show the landing for unauth'd).
+- New file: `src/routes/pricing.tsx` — public, scrapeable, SEO'd.
+- Migration: change `handle_new_user_subscription` to insert `tier='none', status='pending_payment'` instead of starting trial.
+- New server fn: `requireActiveAccess` middleware that wraps `requireSupabaseAuth` + `has_active_access(userId)` check, returns 402 Payment Required if no active sub.
+- New route: `/upgrade` shown when 402 is returned.
+- Daemon install: rename `/api/public/bridge-install` → `/api/bridge-install` (auth-gated), keep the public route only as a redirect to `/pricing` for unauth'd downloaders.
+- Cross-project: write a small Node script using `cross_project--list_projects` + the publish API to flip visibility in bulk after your approval per batch.
 
 ---
 
-## What I will NOT do (covenant)
+## Questions for you before I implement
 
-- ❌ Ask for, store, log, or process a seed phrase, private key, or password — ever.
-- ❌ Add any "connect wallet" button to MERKABAH OS without your explicit say-so.
-- ❌ Auto-scan, auto-import, or auto-anything against a wallet.
-- ❌ Replace this guide with code unless you say "build it."
+1. **The 30 existing trial users** — (a) grandfather them with a 14-day extension + email "add card or pause", (b) hard-cut tomorrow, no email, (c) keep trialing as-is, only enforce paywall on NEW signups.
+2. **GitHub posture** — Option A (source-available public), B (all private now), or C (split protocol-public / impl-private)?
+3. **The other 99 projects** — start the audit batches now, or finish locking down THIS project first and circle back?
+4. **Pricing** — keep $49 / $199 / $999, or do you want to revisit the tiers (e.g. add a $19 "Spectator" read-only tier, or raise the floor to $99)?
 
-This document stays a document. Your wallets stay yours.
-
----
-
-## What you do next (you, not me)
-
-1. Print or screenshot this list.
-2. Tick the wallets you recognize. Cross out the ones you've never used.
-3. For each ticked one: run the 3 steps, **confirm you can log in**, write down the date confirmed in a notebook (paper, not digital).
-
-When you're done, tell me **how many wallets you confirmed** (just the number — no addresses, no balances, no names). Then I'll know whether the next move is the inventory file, the lawyer call, or just rest.
+Answer those four and I'll execute Lock 1 in the next pass.
