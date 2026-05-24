@@ -1,85 +1,99 @@
-# Monetization & Public-Access Lockdown Plan
 
-## Current state (verified)
+# Bulletproof Plan — Sync Everything, Lock It Down
 
-- **99 Lovable projects** in your workspace. ~10+ already **published public** (Signchart, Pixar Mom, CEO Brain, Dominion, Ocean Floor, Profit Navigator, Grea8gawd, Love-the-Style, etc.).
-- **MERKABAH OS** itself: published public at cognitivesync.io. License is already proprietary, paid-only (Operator $49 / Architect $199 / Sovereign $999 + 3-day trial requiring card). Subscriptions table: **30 free trials live, 1 lifetime (you), zero paying customers.**
-- **Public API surface** on this project: `/api/public/health`, `/api/public/bridge-daemon`, `/api/public/bridge-install`, `/api/public/bridge.$`, `/api/public/merkabah-command`, `/api/public/payments/webhook`, `/api/public/hooks/*`. Some are infrastructure (webhooks must stay open + signed); others (bridge-install, bridge-daemon) currently let anyone download the daemon.
-- **GitHub**: this repo is connected. Visibility (public vs private) is set on GitHub itself — we need to decide.
-
-The license already says "paid use only." The leak is that the **product is shipped open and accessible** — anyone with the URL gets the full app, the trial auto-starts, and 30 people are using it without ever putting a card down (because trial requires card but trial flow may be bypassable or pre-existed the rule).
+This MERKABAH OS repo stays your single Lovable-synced repo (hub). All RYANPUDDY GitHub repos stay as separate repos (spokes) but are fully indexed, monitored, and surfaced inside MERKABAH OS. No code is physically merged — that would break their existing deploys and history. Instead, MERKABAH OS becomes the cockpit.
 
 ---
 
-## The strategy: four locks, applied in order
+## Phase 1 — Project Library (the cockpit)
 
-### Lock 1 — Tighten THIS project (MERKABAH OS / cognitivesync.io)
+Extend the existing `projects` table + `/github` page into a real Project Library.
 
-**Goal:** Stop giving away access. Trial requires card-on-file before ANY feature works. Public site becomes a marketing landing page only.
+1. **Schema additions** to `public.projects`:
+   - `category` enum: `master_os_omega` | `grokify` | `oralift` | `agent_systems` | `reference` | `archive`
+   - `revenue_status` enum: `live` | `ready_to_launch` | `in_build` | `idea` | `paused`
+   - `priority` int (1–5, for "focus to make money now" ranking)
+   - `github_full_name` text (e.g. `RYANPUDDY/master-os-omega`)
+   - `github_private` bool
+   - `last_synced_at` timestamptz
+   - `stars`, `open_issues`, `default_branch`, `last_commit_at`, `language`, `description_remote` — cached from GitHub API
+   - `notes` text (your private strategy notes per project)
+   - RLS: super_admin only (your eyes only — Throne lockdown applies)
 
-1. **Marketing landing at `/`** — the only fully public route. Hero, pricing, "Start trial" CTA. No app surface, no console, no chat, no dashboard reachable without auth.
-2. **Auth gate hardening** — every app route (`/dashboard`, `/console`, `/chat`, `/commands`, `/agents`, `/projects`, `/roadmaps`, `/constellation`, `/terminal`, `/bridge`, `/admin`, `/settings/*`) requires `RequireAuth` + `has_active_access()`. Currently most have `RequireAuth` but the access check is inconsistent.
-3. **Trial-without-card cutoff** — audit `handle_new_user_subscription` trigger. Right now signup auto-creates a 3-day trial. Change to: signup creates `tier=none, status=pending_payment`. Trial only starts after Stripe Checkout returns with a saved card (subscription_data.trial_period_days flow we already use).
-4. **The 30 existing trial users** — three options to choose from (Q1 below).
-5. **Daemon download paywall** — `/api/public/bridge-install` should require an authenticated, paying user's pairing code (already does for pair claim, but install script is open). Move the install script behind `requireSupabaseAuth` or a signed short-lived URL.
-6. **Public-facing API tightening** — keep `/api/public/health` (needed for monitoring + doctrine fingerprint), keep `/api/public/payments/webhook` (Stripe), keep `/api/public/merkabah-command` (HMAC-signed, already gated). Lock everything else behind auth + plan check.
+2. **Server fn `syncGitHubLibrary`** (`src/lib/github-library.functions.ts`)
+   - Uses existing `GITHUB_TOKEN` secret
+   - Lists all repos under `RYANPUDDY` (public + private)
+   - Upserts each into `projects` with cached metadata
+   - Auto-tags category from repo name (heuristic) then you correct via UI
+   - Returns diff: new / updated / archived
 
-### Lock 2 — Audit the 9+ other published public projects
+3. **`/library` route** (new, super_admin only) — the cockpit:
+   - 4 columns grouped by category: **Master OS Omega · Grokify · Oralift · Agent Systems**
+   - Each card: name, private/public badge, last commit, stars, revenue_status pill, priority stars, "Open on GitHub" + "Edit notes"
+   - Top bar: "Sync now" button → calls `syncGitHubLibrary`
+   - "Reference" section below for `nexu-io/open-design` and any other inspiration repos
 
-For each project currently published `public`:
-- **Decision matrix**: is it a (a) revenue-generating client deliverable, (b) personal/family (Mom's Animation, Reconnect Hub), (c) experimental/abandoned, or (d) something to commercialize?
-- **Default action**: switch publish visibility to `private` (workspace-only) until you've consciously decided to monetize.
-- **For commercial ones** (Signchart, CEO Brain, Dominion, Profit Navigator, Ocean Floor): add the same paywall pattern — landing page public, app private, Stripe checkout for access.
-- **For personal** (Mom's, Reconnect Hub): keep public BUT password-gate or invite-link gate so randoms can't index them.
-
-This is a 99-project audit. We don't do it all in one shot — we do it in **batches of 10**, you approve each batch's classification, then the agent flips visibility + adds the appropriate gate.
-
-### Lock 3 — GitHub repo posture
-
-You said "we open sourced this for a reason." Right now the LICENSE makes redistribution illegal but the **code is publicly readable** if the repo is public. That's a contradiction worth fixing.
-
-Three honest options for the GitHub side:
-
-- **Option A — Source-available, paid-to-run**: Keep GitHub repo public. Code is readable so people can audit / learn / verify provenance, but the LICENSE forbids running it commercially without paid access (status quo, but explicitly enforced).
-- **Option B — Private repos across the board**: Flip every connected repo to private. Removes the marketing/credibility benefit of an open codebase but eliminates copy-paste theft risk.
-- **Option C — Two-track**: a tiny **public** "Cognitive Sync Protocol" spec + SDK repo (so the brand and the protocol exist publicly), and a **private** monorepo with the actual MERKABAH OS implementation. Best of both — establishes your authorship publicly, keeps the moat private.
-
-Recommended: **Option C** (long-term), with **Option B** (private everything) as the immediate move while you decide.
-
-### Lock 4 — Activate billing for real
-
-- Verify `payments--get_go_live_status` — confirm Stripe live mode is ready and the four webhook events (`checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`) are wired.
-- Publish a real pricing page (the `/billing` route is good, but it's auth-gated; we need a public `/pricing`).
-- Send the 30 current trial users a one-time email: "Your 3-day trial requires a payment method to continue. Add card by [date] or access pauses." (Resend is already wired.)
+4. **"Money Focus" panel** on `/library` and `/dashboard`:
+   - Filters projects where `revenue_status IN ('live','ready_to_launch')`
+   - Sorted by priority desc
+   - Each row: next concrete action you set, last-touched date
+   - This is your "what do I focus on TODAY to make money" view
 
 ---
 
-## Execution order (recommended)
+## Phase 2 — Anthropic Admin Key (additive, secure)
 
-1. **Today:** Lock 1 steps 1–3 (landing page + auth gate + trial-needs-card). Stops the bleed.
-2. **This week:** Lock 4 (go-live + email the 30 trial users) + Lock 3 (flip all repos private temporarily).
-3. **Next 2 weeks:** Lock 2 in batches of 10 projects, you approve each batch.
-4. **When you have 5+ paying customers:** revisit Lock 3 to decide A vs C.
-
----
-
-## Technical details (for the build phase, not now)
-
-- New file: `src/routes/index.tsx` becomes pure marketing (currently routes to dashboard for auth'd users — keep that, but show the landing for unauth'd).
-- New file: `src/routes/pricing.tsx` — public, scrapeable, SEO'd.
-- Migration: change `handle_new_user_subscription` to insert `tier='none', status='pending_payment'` instead of starting trial.
-- New server fn: `requireActiveAccess` middleware that wraps `requireSupabaseAuth` + `has_active_access(userId)` check, returns 402 Payment Required if no active sub.
-- New route: `/upgrade` shown when 402 is returned.
-- Daemon install: rename `/api/public/bridge-install` → `/api/bridge-install` (auth-gated), keep the public route only as a redirect to `/pricing` for unauth'd downloaders.
-- Cross-project: write a small Node script using `cross_project--list_projects` + the publish API to flip visibility in bulk after your approval per batch.
+- Add **new** secret `ANTHROPIC_ADMIN_KEY` via `secrets--add_secret` (you paste the *fresh, rotated* key in the secure form — never in chat).
+- Existing `ANTHROPIC_API_KEY` untouched (Sacred Code rule).
+- Thin server helper `src/lib/anthropic-admin.functions.ts` — super_admin only, used for org/workspace/usage/billing admin calls. Not wired into the brain race; pure ops surface.
+- Surface basic usage/org info on a new `/settings/anthropic-admin` panel (read-only first; we add actions later when you ask).
 
 ---
 
-## Questions for you before I implement
+## Phase 3 — Privacy Lockdown Checklist (you click, I document)
 
-1. **The 30 existing trial users** — (a) grandfather them with a 14-day extension + email "add card or pause", (b) hard-cut tomorrow, no email, (c) keep trialing as-is, only enforce paywall on NEW signups.
-2. **GitHub posture** — Option A (source-available public), B (all private now), or C (split protocol-public / impl-private)?
-3. **The other 99 projects** — start the audit batches now, or finish locking down THIS project first and circle back?
-4. **Pricing** — keep $49 / $199 / $999, or do you want to revisit the tiers (e.g. add a $19 "Spectator" read-only tier, or raise the floor to $99)?
+I cannot flip GitHub repo visibility for you — GitHub doesn't let third-party apps do that. So `/library` will include a **Privacy Audit panel** that:
+- Shows every RYANPUDDY repo with current public/private status (from GitHub API).
+- Red-flags every public repo with a one-click deep-link to that repo's `Settings → Change visibility → Private`.
+- Tracks status: once a repo flips private, the audit goes green.
 
-Answer those four and I'll execute Lock 1 in the next pass.
+For the published Lovable site (`neural-guide-sync.lovable.app`):
+- Private publish needs Business/Enterprise plan. Two real options I'll surface as buttons:
+  - **Unpublish now** (kills the public URL until you republish)
+  - **Upgrade plan** (link to billing)
+- You decide; no auto-action.
+
+---
+
+## Phase 4 — nexu-io/open-design
+
+Treated as **reference only** in `/library` under Reference. I will NOT copy code from it (license unverified, likely viral). If a specific pattern from that commit is useful, you point at it and I'll clean-room implement inside MERKABAH OS.
+
+---
+
+## What I will NOT do
+- Delete or refactor any existing code (Sacred Code).
+- Copy `nexu-io/open-design` source into the repo.
+- Flip publish visibility, rotate keys, or change GitHub repo visibility autonomously.
+- Touch anything outside the additive surfaces listed above.
+
+---
+
+## Technical summary (for the record)
+- Migration: extend `public.projects` + enums + indexes; RLS = super_admin only.
+- New server fns: `syncGitHubLibrary`, `setProjectMeta`, `getLibraryOverview`, `getAnthropicOrgInfo`.
+- New routes: `/library`, `/settings/anthropic-admin` (both under `_authenticated`, gated by `has_role('super_admin')`).
+- New secret: `ANTHROPIC_ADMIN_KEY` (requires you to enter the rotated value in the secure form).
+- Reuses existing `GITHUB_TOKEN`, existing throne lockdown, existing brain stack.
+
+---
+
+## Sequence when you approve
+1. Run migration (Phase 1 schema).
+2. Build `syncGitHubLibrary` + `/library` page.
+3. Trigger first sync — you'll see every RYANPUDDY repo appear.
+4. You tag categories + revenue_status + priorities in the UI (5 min).
+5. Add `ANTHROPIC_ADMIN_KEY` secret + admin panel.
+6. Privacy Audit panel goes live with your one-click privacy links.
+
+Approve and I switch to build mode and execute in this exact order.
