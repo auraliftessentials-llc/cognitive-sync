@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
