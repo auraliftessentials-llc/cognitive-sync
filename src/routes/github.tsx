@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Github, Shield, CheckCircle2, KeyRound, RefreshCw } from "lucide-react";
-import { syncGithubRepos, getGithubTokenStatus } from "@/lib/github.functions";
+import { syncGithubRepos, getGithubTokenStatus, syncGithubUser } from "@/lib/github.functions";
 import { toast } from "sonner";
 
 const LAST_SYNC_KEY = "github:last-synced-at";
@@ -179,9 +179,58 @@ function Page() {
         </div>
       </div>
 
+      <PublicProfileSync />
+
       <p className="text-xs text-muted-foreground">
         Heads up: this only fetches repos visible to the active token. Private orgs may need additional scope.
       </p>
+    </div>
+  );
+}
+
+function PublicProfileSync() {
+  const [username, setUsername] = useState("RYANPUDDY");
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ added: number; updated: number; total: number } | null>(null);
+
+  const run = async () => {
+    setBusy(true);
+    try {
+      const r = await syncGithubUser({ data: { username: username.trim() } });
+      setResult({ added: r.added, updated: r.updated, total: r.total });
+      toast.success(`@${r.username}: ${r.added} added, ${r.updated} updated (${r.total} public repos)`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Public sync failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="glow-border rounded-lg p-6 mb-6 space-y-4">
+      <div>
+        <div className="font-display text-lg mb-1">Sync a public GitHub profile</div>
+        <p className="text-sm text-muted-foreground">
+          Pull any user's public repos into your library — no token from that account required. Useful for personal
+          accounts like <code className="text-foreground">RYANPUDDY</code>.
+        </p>
+      </div>
+      <div className="flex gap-2">
+        <Input
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="github username"
+          autoComplete="off"
+        />
+        <Button onClick={run} disabled={busy || !username.trim()} className="bg-primary text-primary-foreground hover:opacity-90">
+          {busy ? "Syncing…" : "Sync profile"}
+        </Button>
+      </div>
+      {result && (
+        <div className="text-xs text-muted-foreground">
+          Last run: {result.added} added · {result.updated} updated · {result.total} total public repos
+        </div>
+      )}
     </div>
   );
 }
