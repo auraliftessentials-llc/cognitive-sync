@@ -53,13 +53,21 @@ function Landing() {
           how you think, and tells you the next move you should actually make.
         </p>
 
-        <div className="flex flex-wrap gap-4 mb-20 animate-fade-in-up">
+        <div className="flex flex-wrap gap-4 mb-6 animate-fade-in-up">
           <Link to="/auth">
             <Button size="lg" className="bg-primary text-primary-foreground hover:opacity-90">
               Boot the brain <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
+          <Link to="/pricing">
+            <Button size="lg" variant="outline">
+              See pricing
+            </Button>
+          </Link>
         </div>
+        <p className="text-xs text-muted-foreground mb-20 animate-fade-in-up">
+          Paid access only. Trial requires a payment method on file. No free tier.
+        </p>
 
         <div className="grid md:grid-cols-2 gap-4">
           {[

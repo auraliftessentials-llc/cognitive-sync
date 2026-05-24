@@ -14,6 +14,7 @@ import { Route as SuggestionsRouteImport } from './routes/suggestions'
 import { Route as RoadmapsRouteImport } from './routes/roadmaps'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LegalRouteImport } from './routes/legal'
 import { Route as GithubRouteImport } from './routes/github'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -70,6 +71,11 @@ const ProjectsRoute = ProjectsRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LegalRoute = LegalRouteImport.update({
@@ -252,6 +258,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
   '/legal': typeof LegalRoute
+  '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/roadmaps': typeof RoadmapsRoute
@@ -291,6 +298,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
   '/legal': typeof LegalRoute
+  '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/roadmaps': typeof RoadmapsRoute
@@ -331,6 +339,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
   '/legal': typeof LegalRoute
+  '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/roadmaps': typeof RoadmapsRoute
@@ -372,6 +381,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/github'
     | '/legal'
+    | '/pricing'
     | '/profile'
     | '/projects'
     | '/roadmaps'
@@ -411,6 +421,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/github'
     | '/legal'
+    | '/pricing'
     | '/profile'
     | '/projects'
     | '/roadmaps'
@@ -450,6 +461,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/github'
     | '/legal'
+    | '/pricing'
     | '/profile'
     | '/projects'
     | '/roadmaps'
@@ -490,6 +502,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   GithubRoute: typeof GithubRoute
   LegalRoute: typeof LegalRoute
+  PricingRoute: typeof PricingRoute
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRoute
   RoadmapsRoute: typeof RoadmapsRoute
@@ -551,6 +564,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/legal': {
@@ -794,6 +814,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   GithubRoute: GithubRoute,
   LegalRoute: LegalRoute,
+  PricingRoute: PricingRoute,
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRoute,
   RoadmapsRoute: RoadmapsRoute,
@@ -822,12 +843,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
