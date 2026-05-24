@@ -15,6 +15,7 @@ import { Route as RoadmapsRouteImport } from './routes/roadmaps'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as LibraryRouteImport } from './routes/library'
 import { Route as LegalRouteImport } from './routes/legal'
 import { Route as GithubRouteImport } from './routes/github'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -76,6 +77,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LegalRoute = LegalRouteImport.update({
@@ -258,6 +264,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
   '/legal': typeof LegalRoute
+  '/library': typeof LibraryRoute
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
@@ -298,6 +305,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
   '/legal': typeof LegalRoute
+  '/library': typeof LibraryRoute
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
@@ -339,6 +347,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
   '/legal': typeof LegalRoute
+  '/library': typeof LibraryRoute
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
@@ -381,6 +390,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/github'
     | '/legal'
+    | '/library'
     | '/pricing'
     | '/profile'
     | '/projects'
@@ -421,6 +431,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/github'
     | '/legal'
+    | '/library'
     | '/pricing'
     | '/profile'
     | '/projects'
@@ -461,6 +472,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/github'
     | '/legal'
+    | '/library'
     | '/pricing'
     | '/profile'
     | '/projects'
@@ -502,6 +514,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   GithubRoute: typeof GithubRoute
   LegalRoute: typeof LegalRoute
+  LibraryRoute: typeof LibraryRoute
   PricingRoute: typeof PricingRoute
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRoute
@@ -571,6 +584,13 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/legal': {
@@ -814,6 +834,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   GithubRoute: GithubRoute,
   LegalRoute: LegalRoute,
+  LibraryRoute: LibraryRoute,
   PricingRoute: PricingRoute,
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRoute,
