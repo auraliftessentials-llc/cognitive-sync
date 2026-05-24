@@ -15,6 +15,7 @@ import { Route as RoadmapsRouteImport } from './routes/roadmaps'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as LibraryRouteImport } from './routes/library'
 import { Route as LegalRouteImport } from './routes/legal'
 import { Route as GithubRouteImport } from './routes/github'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -31,6 +32,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
 import { Route as SettingsCloudflareRouteImport } from './routes/settings.cloudflare'
 import { Route as SettingsAuthRouteImport } from './routes/settings.auth'
+import { Route as SettingsAnthropicAdminRouteImport } from './routes/settings.anthropic-admin'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as HooksSyncGithubRouteImport } from './routes/hooks/sync-github'
 import { Route as HooksRunCliSchedulesRouteImport } from './routes/hooks/run-cli-schedules'
@@ -76,6 +78,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LegalRoute = LegalRouteImport.update({
@@ -156,6 +163,11 @@ const SettingsCloudflareRoute = SettingsCloudflareRouteImport.update({
 const SettingsAuthRoute = SettingsAuthRouteImport.update({
   id: '/settings/auth',
   path: '/settings/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsAnthropicAdminRoute = SettingsAnthropicAdminRouteImport.update({
+  id: '/settings/anthropic-admin',
+  path: '/settings/anthropic-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InviteTokenRoute = InviteTokenRouteImport.update({
@@ -258,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
   '/legal': typeof LegalRoute
+  '/library': typeof LibraryRoute
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
@@ -267,6 +280,7 @@ export interface FileRoutesByFullPath {
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/settings/anthropic-admin': typeof SettingsAnthropicAdminRoute
   '/settings/auth': typeof SettingsAuthRoute
   '/settings/cloudflare': typeof SettingsCloudflareRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
@@ -298,6 +312,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
   '/legal': typeof LegalRoute
+  '/library': typeof LibraryRoute
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
@@ -307,6 +322,7 @@ export interface FileRoutesByTo {
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/settings/anthropic-admin': typeof SettingsAnthropicAdminRoute
   '/settings/auth': typeof SettingsAuthRoute
   '/settings/cloudflare': typeof SettingsCloudflareRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
@@ -339,6 +355,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/github': typeof GithubRoute
   '/legal': typeof LegalRoute
+  '/library': typeof LibraryRoute
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
@@ -348,6 +365,7 @@ export interface FileRoutesById {
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/settings/anthropic-admin': typeof SettingsAnthropicAdminRoute
   '/settings/auth': typeof SettingsAuthRoute
   '/settings/cloudflare': typeof SettingsCloudflareRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
@@ -381,6 +399,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/github'
     | '/legal'
+    | '/library'
     | '/pricing'
     | '/profile'
     | '/projects'
@@ -390,6 +409,7 @@ export interface FileRouteTypes {
     | '/hooks/run-cli-schedules'
     | '/hooks/sync-github'
     | '/invite/$token'
+    | '/settings/anthropic-admin'
     | '/settings/auth'
     | '/settings/cloudflare'
     | '/settings/integrations'
@@ -421,6 +441,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/github'
     | '/legal'
+    | '/library'
     | '/pricing'
     | '/profile'
     | '/projects'
@@ -430,6 +451,7 @@ export interface FileRouteTypes {
     | '/hooks/run-cli-schedules'
     | '/hooks/sync-github'
     | '/invite/$token'
+    | '/settings/anthropic-admin'
     | '/settings/auth'
     | '/settings/cloudflare'
     | '/settings/integrations'
@@ -461,6 +483,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/github'
     | '/legal'
+    | '/library'
     | '/pricing'
     | '/profile'
     | '/projects'
@@ -470,6 +493,7 @@ export interface FileRouteTypes {
     | '/hooks/run-cli-schedules'
     | '/hooks/sync-github'
     | '/invite/$token'
+    | '/settings/anthropic-admin'
     | '/settings/auth'
     | '/settings/cloudflare'
     | '/settings/integrations'
@@ -502,6 +526,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   GithubRoute: typeof GithubRoute
   LegalRoute: typeof LegalRoute
+  LibraryRoute: typeof LibraryRoute
   PricingRoute: typeof PricingRoute
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRoute
@@ -511,6 +536,7 @@ export interface RootRouteChildren {
   HooksRunCliSchedulesRoute: typeof HooksRunCliSchedulesRoute
   HooksSyncGithubRoute: typeof HooksSyncGithubRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  SettingsAnthropicAdminRoute: typeof SettingsAnthropicAdminRoute
   SettingsAuthRoute: typeof SettingsAuthRoute
   SettingsCloudflareRoute: typeof SettingsCloudflareRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
@@ -571,6 +597,13 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/legal': {
@@ -683,6 +716,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/auth'
       fullPath: '/settings/auth'
       preLoaderRoute: typeof SettingsAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/anthropic-admin': {
+      id: '/settings/anthropic-admin'
+      path: '/settings/anthropic-admin'
+      fullPath: '/settings/anthropic-admin'
+      preLoaderRoute: typeof SettingsAnthropicAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/invite/$token': {
@@ -814,6 +854,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   GithubRoute: GithubRoute,
   LegalRoute: LegalRoute,
+  LibraryRoute: LibraryRoute,
   PricingRoute: PricingRoute,
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRoute,
@@ -823,6 +864,7 @@ const rootRouteChildren: RootRouteChildren = {
   HooksRunCliSchedulesRoute: HooksRunCliSchedulesRoute,
   HooksSyncGithubRoute: HooksSyncGithubRoute,
   InviteTokenRoute: InviteTokenRoute,
+  SettingsAnthropicAdminRoute: SettingsAnthropicAdminRoute,
   SettingsAuthRoute: SettingsAuthRoute,
   SettingsCloudflareRoute: SettingsCloudflareRoute,
   SettingsIntegrationsRoute: SettingsIntegrationsRoute,
