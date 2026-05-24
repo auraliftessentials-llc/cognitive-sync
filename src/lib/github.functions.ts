@@ -76,6 +76,13 @@ export const syncGithubUser = createServerFn({ method: "POST" })
         tags,
         status: r.archived ? "archived" : "active",
         last_worked_on: r.pushed_at,
+        github_full_name: r.full_name ?? null,
+        github_private: typeof r.private === "boolean" ? r.private : null,
+        github_default_branch: r.default_branch ?? null,
+        github_stars: typeof r.stargazers_count === "number" ? r.stargazers_count : null,
+        github_open_issues: typeof r.open_issues_count === "number" ? r.open_issues_count : null,
+        github_last_commit_at: r.pushed_at ?? null,
+        last_synced_at: new Date().toISOString(),
       };
 
       if (existing) {
