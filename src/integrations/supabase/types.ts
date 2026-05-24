@@ -1016,15 +1016,26 @@ export type Database = {
       }
       projects: {
         Row: {
+          category: Database["public"]["Enums"]["project_category"]
           created_at: string
           description: string | null
+          focus_priority: number
+          github_default_branch: string | null
+          github_full_name: string | null
+          github_last_commit_at: string | null
+          github_open_issues: number | null
+          github_private: boolean | null
+          github_stars: number | null
           id: string
+          last_synced_at: string | null
           last_worked_on: string | null
           live_url: string | null
           name: string
+          next_action: string | null
           notes: string | null
           priority: number
           repo_url: string | null
+          revenue_status: Database["public"]["Enums"]["project_revenue_status"]
           status: string
           tags: string[] | null
           tech_stack: string[] | null
@@ -1033,15 +1044,26 @@ export type Database = {
           workspace_id: string | null
         }
         Insert: {
+          category?: Database["public"]["Enums"]["project_category"]
           created_at?: string
           description?: string | null
+          focus_priority?: number
+          github_default_branch?: string | null
+          github_full_name?: string | null
+          github_last_commit_at?: string | null
+          github_open_issues?: number | null
+          github_private?: boolean | null
+          github_stars?: number | null
           id?: string
+          last_synced_at?: string | null
           last_worked_on?: string | null
           live_url?: string | null
           name: string
+          next_action?: string | null
           notes?: string | null
           priority?: number
           repo_url?: string | null
+          revenue_status?: Database["public"]["Enums"]["project_revenue_status"]
           status?: string
           tags?: string[] | null
           tech_stack?: string[] | null
@@ -1050,15 +1072,26 @@ export type Database = {
           workspace_id?: string | null
         }
         Update: {
+          category?: Database["public"]["Enums"]["project_category"]
           created_at?: string
           description?: string | null
+          focus_priority?: number
+          github_default_branch?: string | null
+          github_full_name?: string | null
+          github_last_commit_at?: string | null
+          github_open_issues?: number | null
+          github_private?: boolean | null
+          github_stars?: number | null
           id?: string
+          last_synced_at?: string | null
           last_worked_on?: string | null
           live_url?: string | null
           name?: string
+          next_action?: string | null
           notes?: string | null
           priority?: number
           repo_url?: string | null
+          revenue_status?: Database["public"]["Enums"]["project_revenue_status"]
           status?: string
           tags?: string[] | null
           tech_stack?: string[] | null
@@ -1713,6 +1746,20 @@ export type Database = {
         | "architect"
         | "sovereign"
         | "lifetime"
+      project_category:
+        | "master_os_omega"
+        | "grokify"
+        | "oralift"
+        | "agent_systems"
+        | "reference"
+        | "archive"
+        | "unclassified"
+      project_revenue_status:
+        | "live"
+        | "ready_to_launch"
+        | "in_build"
+        | "idea"
+        | "paused"
       workspace_role: "owner" | "admin" | "manager" | "member"
     }
     CompositeTypes: {
@@ -1848,6 +1895,22 @@ export const Constants = {
         "architect",
         "sovereign",
         "lifetime",
+      ],
+      project_category: [
+        "master_os_omega",
+        "grokify",
+        "oralift",
+        "agent_systems",
+        "reference",
+        "archive",
+        "unclassified",
+      ],
+      project_revenue_status: [
+        "live",
+        "ready_to_launch",
+        "in_build",
+        "idea",
+        "paused",
       ],
       workspace_role: ["owner", "admin", "manager", "member"],
     },
