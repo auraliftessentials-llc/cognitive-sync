@@ -32,6 +32,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
 import { Route as SettingsCloudflareRouteImport } from './routes/settings.cloudflare'
 import { Route as SettingsAuthRouteImport } from './routes/settings.auth'
+import { Route as SettingsAnthropicAdminRouteImport } from './routes/settings.anthropic-admin'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as HooksSyncGithubRouteImport } from './routes/hooks/sync-github'
 import { Route as HooksRunCliSchedulesRouteImport } from './routes/hooks/run-cli-schedules'
@@ -164,6 +165,11 @@ const SettingsAuthRoute = SettingsAuthRouteImport.update({
   path: '/settings/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsAnthropicAdminRoute = SettingsAnthropicAdminRouteImport.update({
+  id: '/settings/anthropic-admin',
+  path: '/settings/anthropic-admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InviteTokenRoute = InviteTokenRouteImport.update({
   id: '/invite/$token',
   path: '/invite/$token',
@@ -274,6 +280,7 @@ export interface FileRoutesByFullPath {
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/settings/anthropic-admin': typeof SettingsAnthropicAdminRoute
   '/settings/auth': typeof SettingsAuthRoute
   '/settings/cloudflare': typeof SettingsCloudflareRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
@@ -315,6 +322,7 @@ export interface FileRoutesByTo {
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/settings/anthropic-admin': typeof SettingsAnthropicAdminRoute
   '/settings/auth': typeof SettingsAuthRoute
   '/settings/cloudflare': typeof SettingsCloudflareRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
@@ -357,6 +365,7 @@ export interface FileRoutesById {
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
   '/hooks/sync-github': typeof HooksSyncGithubRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/settings/anthropic-admin': typeof SettingsAnthropicAdminRoute
   '/settings/auth': typeof SettingsAuthRoute
   '/settings/cloudflare': typeof SettingsCloudflareRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
@@ -400,6 +409,7 @@ export interface FileRouteTypes {
     | '/hooks/run-cli-schedules'
     | '/hooks/sync-github'
     | '/invite/$token'
+    | '/settings/anthropic-admin'
     | '/settings/auth'
     | '/settings/cloudflare'
     | '/settings/integrations'
@@ -441,6 +451,7 @@ export interface FileRouteTypes {
     | '/hooks/run-cli-schedules'
     | '/hooks/sync-github'
     | '/invite/$token'
+    | '/settings/anthropic-admin'
     | '/settings/auth'
     | '/settings/cloudflare'
     | '/settings/integrations'
@@ -482,6 +493,7 @@ export interface FileRouteTypes {
     | '/hooks/run-cli-schedules'
     | '/hooks/sync-github'
     | '/invite/$token'
+    | '/settings/anthropic-admin'
     | '/settings/auth'
     | '/settings/cloudflare'
     | '/settings/integrations'
@@ -524,6 +536,7 @@ export interface RootRouteChildren {
   HooksRunCliSchedulesRoute: typeof HooksRunCliSchedulesRoute
   HooksSyncGithubRoute: typeof HooksSyncGithubRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  SettingsAnthropicAdminRoute: typeof SettingsAnthropicAdminRoute
   SettingsAuthRoute: typeof SettingsAuthRoute
   SettingsCloudflareRoute: typeof SettingsCloudflareRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
@@ -705,6 +718,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsAuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/anthropic-admin': {
+      id: '/settings/anthropic-admin'
+      path: '/settings/anthropic-admin'
+      fullPath: '/settings/anthropic-admin'
+      preLoaderRoute: typeof SettingsAnthropicAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/invite/$token': {
       id: '/invite/$token'
       path: '/invite/$token'
@@ -844,6 +864,7 @@ const rootRouteChildren: RootRouteChildren = {
   HooksRunCliSchedulesRoute: HooksRunCliSchedulesRoute,
   HooksSyncGithubRoute: HooksSyncGithubRoute,
   InviteTokenRoute: InviteTokenRoute,
+  SettingsAnthropicAdminRoute: SettingsAnthropicAdminRoute,
   SettingsAuthRoute: SettingsAuthRoute,
   SettingsCloudflareRoute: SettingsCloudflareRoute,
   SettingsIntegrationsRoute: SettingsIntegrationsRoute,

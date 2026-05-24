@@ -28,6 +28,7 @@ const navItems = [
   { to: "/terminal", label: "Web Term", icon: Terminal },
   { to: "/agents", label: "Agents", icon: Bot },
   { to: "/projects", label: "Library", icon: FolderGit2 },
+  { to: "/library", label: "Cockpit", icon: FolderGit2 },
   { to: "/suggestions", label: "Moves", icon: Sparkles },
   { to: "/roadmaps", label: "Roadmaps", icon: Map },
   { to: "/chat", label: "Brain", icon: MessageSquare },
