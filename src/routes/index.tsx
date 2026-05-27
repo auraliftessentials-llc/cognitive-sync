@@ -6,6 +6,30 @@ import { Button } from "@/components/ui/button";
 import { ConnectMacBookButton } from "@/components/ConnectMacBookButton";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "MERKABAH OS — The Operator's Command Layer" },
+      {
+        name: "description",
+        content:
+          "Sovereign command layer for founders. Brain-switching executive agents, live CRM intelligence, and a marketing-genius Operator at your shoulder. Built by Ryan Puddy.",
+      },
+      { property: "og:title", content: "MERKABAH OS — The Operator's Command Layer" },
+      {
+        property: "og:description",
+        content:
+          "Brain-switching executive agents. Live CRM intelligence. Marketing-genius Operator. Built by Ryan Puddy.",
+      },
+      { property: "og:url", content: "https://cognitivesync.io/" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:title", content: "MERKABAH OS — The Operator's Command Layer" },
+      {
+        name: "twitter:description",
+        content: "Sovereign command layer for founders. Built by Ryan Puddy.",
+      },
+    ],
+    links: [{ rel: "canonical", href: "https://cognitivesync.io/" }],
+  }),
   component: Landing,
 });
 

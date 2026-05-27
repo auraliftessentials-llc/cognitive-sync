@@ -51,6 +51,10 @@ export const Route = createRootRoute({
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/27c9b844-6c41-4107-a72e-5eb771a31b26/id-preview-520a2bad--9bab356d-3978-4977-aaa2-4d0d6b21f319.lovable.app-1776749378502.png" },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "MERKABAH OS" },
+      { property: "og:url", content: "https://cognitivesync.io/" },
+      { property: "og:locale", content: "en_US" },
+      { property: "og:locale:alternate", content: "en_GB" },
       // Authorship watermarks — see CREATOR.md, NOTICE, LICENSE.
       // Removing or modifying these fields without explicit written permission
       // from Ryan Stephen Puddy violates the proprietary license.
@@ -67,8 +71,44 @@ export const Route = createRootRoute({
       { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
       { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512.png" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "alternate", hrefLang: "en", href: "https://cognitivesync.io/" },
+      { rel: "alternate", hrefLang: "en-US", href: "https://cognitivesync.io/" },
+      { rel: "alternate", hrefLang: "en-GB", href: "https://cognitivesync.io/" },
+      { rel: "alternate", hrefLang: "x-default", href: "https://cognitivesync.io/" },
     ],
-    scripts: [{ src: "/pwa-register.js", defer: true }],
+    scripts: [
+      { src: "/pwa-register.js", defer: true },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          name: "MERKABAH OS",
+          alternateName: "Cognitive Sync",
+          applicationCategory: "BusinessApplication",
+          operatingSystem: "Web, macOS, iOS, Android",
+          url: "https://cognitivesync.io",
+          description:
+            "Sovereign command layer for founders — brain-switching executive agents, live CRM intelligence, and a marketing-genius Operator at your shoulder.",
+          offers: [
+            { "@type": "Offer", name: "Operator", price: "49", priceCurrency: "USD" },
+            { "@type": "Offer", name: "Architect", price: "199", priceCurrency: "USD" },
+            { "@type": "Offer", name: "Sovereign", price: "999", priceCurrency: "USD" },
+          ],
+          creator: {
+            "@type": "Person",
+            name: "Ryan Puddy",
+            jobTitle: "Web3 Architect",
+            email: "ryanauralift@gmail.com",
+          },
+          publisher: {
+            "@type": "Organization",
+            name: "Aura Lift Essentials LLC",
+            email: "ryanauralift@gmail.com",
+          },
+        }),
+      },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,

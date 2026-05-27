@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TerminalRouteImport } from './routes/terminal'
 import { Route as SuggestionsRouteImport } from './routes/suggestions'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RoadmapsRouteImport } from './routes/roadmaps'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -58,6 +59,11 @@ const TerminalRoute = TerminalRouteImport.update({
 const SuggestionsRoute = SuggestionsRouteImport.update({
   id: '/suggestions',
   path: '/suggestions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RoadmapsRoute = RoadmapsRouteImport.update({
@@ -275,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/roadmaps': typeof RoadmapsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/suggestions': typeof SuggestionsRoute
   '/terminal': typeof TerminalRoute
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
@@ -317,6 +324,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/roadmaps': typeof RoadmapsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/suggestions': typeof SuggestionsRoute
   '/terminal': typeof TerminalRoute
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
@@ -360,6 +368,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/roadmaps': typeof RoadmapsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/suggestions': typeof SuggestionsRoute
   '/terminal': typeof TerminalRoute
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
@@ -404,6 +413,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/roadmaps'
+    | '/sitemap.xml'
     | '/suggestions'
     | '/terminal'
     | '/hooks/run-cli-schedules'
@@ -446,6 +456,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/roadmaps'
+    | '/sitemap.xml'
     | '/suggestions'
     | '/terminal'
     | '/hooks/run-cli-schedules'
@@ -488,6 +499,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/projects'
     | '/roadmaps'
+    | '/sitemap.xml'
     | '/suggestions'
     | '/terminal'
     | '/hooks/run-cli-schedules'
@@ -531,6 +543,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRoute
   RoadmapsRoute: typeof RoadmapsRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SuggestionsRoute: typeof SuggestionsRoute
   TerminalRoute: typeof TerminalRoute
   HooksRunCliSchedulesRoute: typeof HooksRunCliSchedulesRoute
@@ -569,6 +582,13 @@ declare module '@tanstack/react-router' {
       path: '/suggestions'
       fullPath: '/suggestions'
       preLoaderRoute: typeof SuggestionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/roadmaps': {
@@ -859,6 +879,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRoute,
   RoadmapsRoute: RoadmapsRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   SuggestionsRoute: SuggestionsRoute,
   TerminalRoute: TerminalRoute,
   HooksRunCliSchedulesRoute: HooksRunCliSchedulesRoute,
@@ -885,12 +906,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
