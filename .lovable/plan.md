@@ -1,99 +1,69 @@
+# Worldwide Marketing Super-Optimization Plan
 
-# Bulletproof Plan — Sync Everything, Lock It Down
-
-This MERKABAH OS repo stays your single Lovable-synced repo (hub). All RYANPUDDY GitHub repos stay as separate repos (spokes) but are fully indexed, monitored, and surfaced inside MERKABAH OS. No code is physically merged — that would break their existing deploys and history. Instead, MERKABAH OS becomes the cockpit.
-
----
-
-## Phase 1 — Project Library (the cockpit)
-
-Extend the existing `projects` table + `/github` page into a real Project Library.
-
-1. **Schema additions** to `public.projects`:
-   - `category` enum: `master_os_omega` | `grokify` | `oralift` | `agent_systems` | `reference` | `archive`
-   - `revenue_status` enum: `live` | `ready_to_launch` | `in_build` | `idea` | `paused`
-   - `priority` int (1–5, for "focus to make money now" ranking)
-   - `github_full_name` text (e.g. `RYANPUDDY/master-os-omega`)
-   - `github_private` bool
-   - `last_synced_at` timestamptz
-   - `stars`, `open_issues`, `default_branch`, `last_commit_at`, `language`, `description_remote` — cached from GitHub API
-   - `notes` text (your private strategy notes per project)
-   - RLS: super_admin only (your eyes only — Throne lockdown applies)
-
-2. **Server fn `syncGitHubLibrary`** (`src/lib/github-library.functions.ts`)
-   - Uses existing `GITHUB_TOKEN` secret
-   - Lists all repos under `RYANPUDDY` (public + private)
-   - Upserts each into `projects` with cached metadata
-   - Auto-tags category from repo name (heuristic) then you correct via UI
-   - Returns diff: new / updated / archived
-
-3. **`/library` route** (new, super_admin only) — the cockpit:
-   - 4 columns grouped by category: **Master OS Omega · Grokify · Oralift · Agent Systems**
-   - Each card: name, private/public badge, last commit, stars, revenue_status pill, priority stars, "Open on GitHub" + "Edit notes"
-   - Top bar: "Sync now" button → calls `syncGitHubLibrary`
-   - "Reference" section below for `nexu-io/open-design` and any other inspiration repos
-
-4. **"Money Focus" panel** on `/library` and `/dashboard`:
-   - Filters projects where `revenue_status IN ('live','ready_to_launch')`
-   - Sorted by priority desc
-   - Each row: next concrete action you set, last-touched date
-   - This is your "what do I focus on TODAY to make money" view
+Goal: make MERKABAH OS / cognitivesync.io maximally discoverable, shareable, and conversion-ready across global markets — without removing or refactoring any existing code (Sacred Code rule honored). Every step is additive.
 
 ---
 
-## Phase 2 — Anthropic Admin Key (additive, secure)
+## Phase 1 — SEO Foundation (the floor)
 
-- Add **new** secret `ANTHROPIC_ADMIN_KEY` via `secrets--add_secret` (you paste the *fresh, rotated* key in the secure form — never in chat).
-- Existing `ANTHROPIC_API_KEY` untouched (Sacred Code rule).
-- Thin server helper `src/lib/anthropic-admin.functions.ts` — super_admin only, used for org/workspace/usage/billing admin calls. Not wired into the brain race; pure ops surface.
-- Surface basic usage/org info on a new `/settings/anthropic-admin` panel (read-only first; we add actions later when you ask).
+Cannot rank without these. Currently the project likely ships default Lovable metadata.
 
----
+1. **Per-route `head()` metadata** on every public route (`/`, `/library`, `/login`, marketing routes). Each gets unique:
+   - `<title>` < 60 chars, keyword-led
+   - `<meta name="description">` < 160 chars
+   - `og:title`, `og:description`, `og:image`, `og:url`, `og:type`
+   - `twitter:card=summary_large_image`, `twitter:title/description/image`
+   - `<link rel="canonical">`
+2. **JSON-LD structured data** on root: `Organization` (Aura Lift Essentials LLC, founder Ryan Puddy, logo, sameAs links), `SoftwareApplication` for MERKABAH OS.
+3. **Single H1 per page**, semantic HTML audit on landing route.
+4. **`public/robots.txt`** — allow all, sitemap directive.
+5. **`src/routes/sitemap[.]xml.ts`** — server route enumerating public routes, BASE_URL = `https://cognitivesync.io`.
 
-## Phase 3 — Privacy Lockdown Checklist (you click, I document)
+## Phase 2 — Worldwide Targeting
 
-I cannot flip GitHub repo visibility for you — GitHub doesn't let third-party apps do that. So `/library` will include a **Privacy Audit panel** that:
-- Shows every RYANPUDDY repo with current public/private status (from GitHub API).
-- Red-flags every public repo with a one-click deep-link to that repo's `Settings → Change visibility → Private`.
-- Tracks status: once a repo flips private, the audit goes green.
+6. **hreflang tags** in root `head()` for `en`, `en-US`, `en-GB`, `x-default` (expand as markets are picked).
+7. **Open Graph image generation** — a branded merkabah hero image at `src/assets/og-merkabah.jpg` (premium imagegen, 1200x630), wired into every route's `og:image`.
+8. **PWA manifest polish** — verify `name`, `short_name`, `description`, `categories`, `screenshots[]` (Play Store / iOS install rich preview).
+9. **Performance signals** — verify lazy-loading on hero images, `loading="lazy"` on below-fold.
 
-For the published Lovable site (`neural-guide-sync.lovable.app`):
-- Private publish needs Business/Enterprise plan. Two real options I'll surface as buttons:
-  - **Unpublish now** (kills the public URL until you republish)
-  - **Upgrade plan** (link to billing)
-- You decide; no auto-action.
+## Phase 3 — Conversion & Tracking Surfaces
 
----
+10. **New route `/marketing`** (additive, throne-visible) showing:
+    - Live SEO score (calls `seo--list_findings` via server fn)
+    - GA4 / Plausible status (placeholder until tracking ID added)
+    - OG preview cards for each route
+    - hreflang coverage map
+11. **Analytics hook** — add `<script>` slot in `__root.tsx` `head()` for a future GA4 / Plausible ID (read from `import.meta.env.VITE_ANALYTICS_ID`). No-op when unset.
+12. **Footer audit** — confirm Aura Legal Pack footer renders site-wide (© 2024–2026 Aura Lift Essentials LLC™ · Made & created by Ryan Puddy, Web3 Architect · /LICENSE · /TRADEMARKS.md). Add if missing — additive only.
 
-## Phase 4 — nexu-io/open-design
+## Phase 4 — Marketing Ops (post-foundation)
 
-Treated as **reference only** in `/library` under Reference. I will NOT copy code from it (license unverified, likely viral). If a specific pattern from that commit is useful, you point at it and I'll clean-room implement inside MERKABAH OS.
-
----
-
-## What I will NOT do
-- Delete or refactor any existing code (Sacred Code).
-- Copy `nexu-io/open-design` source into the repo.
-- Flip publish visibility, rotate keys, or change GitHub repo visibility autonomously.
-- Touch anything outside the additive surfaces listed above.
-
----
-
-## Technical summary (for the record)
-- Migration: extend `public.projects` + enums + indexes; RLS = super_admin only.
-- New server fns: `syncGitHubLibrary`, `setProjectMeta`, `getLibraryOverview`, `getAnthropicOrgInfo`.
-- New routes: `/library`, `/settings/anthropic-admin` (both under `_authenticated`, gated by `has_role('super_admin')`).
-- New secret: `ANTHROPIC_ADMIN_KEY` (requires you to enter the rotated value in the secure form).
-- Reuses existing `GITHUB_TOKEN`, existing throne lockdown, existing brain stack.
+13. **Trigger `seo--trigger_scan`** after Phase 1–2 ship, surface findings in `/marketing`.
+14. **Semrush connector** — already documented; recommend connecting Operator's Semrush account so `/marketing` can pull live keyword/rank data via the gateway.
+15. **Custom domain check** — verify cognitivesync.io is published and primary; share-preview vs Active status.
+16. **Press kit route `/press`** — logo downloads, founder bio (Ryan Puddy, Web3 Architect, Founder of Aura Lift Essentials LLC™), boilerplate, contact ryanauralift@gmail.com.
 
 ---
 
-## Sequence when you approve
-1. Run migration (Phase 1 schema).
-2. Build `syncGitHubLibrary` + `/library` page.
-3. Trigger first sync — you'll see every RYANPUDDY repo appear.
-4. You tag categories + revenue_status + priorities in the UI (5 min).
-5. Add `ANTHROPIC_ADMIN_KEY` secret + admin panel.
-6. Privacy Audit panel goes live with your one-click privacy links.
+## What this plan does NOT do
 
-Approve and I switch to build mode and execute in this exact order.
+- No deletion, refactor, or "cleanup" of existing code (Sacred Code).
+- No autonomous publish flip, no domain DNS changes, no Semrush connection without your OK.
+- No marketing copy is invented for products you haven't briefed me on — Phase 1 metadata uses MERKABAH OS positioning already in memory; product-specific landing pages need your copy.
+- No social media auto-posting, no email blasts, no paid ads wired up.
+
+## Sequence
+
+1. Phase 1 (SEO floor) — ~1 build cycle, fully additive.
+2. Phase 2 (worldwide targeting + OG image) — ~1 build cycle.
+3. Phase 3 (`/marketing` cockpit + analytics hook) — ~1 build cycle.
+4. Phase 4 — gated on your approval per item (SEO scan, Semrush connect, press kit copy).
+
+## Decisions I need from you before Phase 1
+
+- **Primary domain to bake into canonical/sitemap**: `cognitivesync.io` (assumed) vs `neural-guide-sync.lovable.app`?
+- **Initial target markets** for hreflang beyond `en` / `x-default`? (UK, AU, DE, FR, ES, BR…)
+- **Public positioning of MERKABAH OS** — sovereign AI operator platform? AI productivity OS? One-liner you want in the meta description.
+- **Are there products beyond MERKABAH OS** you want surfaced for marketing (Grokify, Oralift, Agent Systems from your cockpit categories)? Each gets its own landing route if yes.
+
+Reply with the answers (or "you pick defaults") and I'll execute Phase 1 immediately.
