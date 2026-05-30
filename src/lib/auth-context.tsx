@@ -26,7 +26,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadRoles = async (uid: string | undefined) => {
     if (!uid) return setRoles([]);
-    const { data } = await supabase.from("user_roles" as any).select("role").eq("user_id", uid);
+    // Resolve to primary throne identity so linked alt emails inherit super_admin.
+    let primaryId = uid;
+    try {
+      const { data: resolved } = await supabase.rpc("resolve_operator_identity" as any, {
+        _user_id: uid,
+      });
+      if (resolved && typeof resolved === "string") primaryId = resolved;
+    } catch {
+      // fall back to raw uid if RPC unavailable
+    }
+    const ids = primaryId === uid ? [uid] : [uid, primaryId];
+    const { data } = await supabase
+      .from("user_roles" as any)
+      .select("role")
+      .in("user_id", ids);
     setRoles(((data as any[]) ?? []).map((r) => r.role as Role));
   };
 
