@@ -1710,6 +1710,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_operator_roles: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"][]
+      }
       has_active_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {

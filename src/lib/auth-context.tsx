@@ -26,8 +26,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadRoles = async (uid: string | undefined) => {
     if (!uid) return setRoles([]);
-    const { data } = await supabase.from("user_roles" as any).select("role").eq("user_id", uid);
-    setRoles(((data as any[]) ?? []).map((r) => r.role as Role));
+    // Throne-aware: resolves linked operator emails to the primary super_admin.
+    const { data, error } = await supabase.rpc("get_operator_roles" as any, {
+      _user_id: uid,
+    });
+    if (error) {
+      // Fallback to direct read of own roles.
+      const { data: own } = await supabase
+        .from("user_roles" as any)
+        .select("role")
+        .eq("user_id", uid);
+      setRoles(((own as any[]) ?? []).map((r) => r.role as Role));
+      return;
+    }
+    const rows = (data as any[]) ?? [];
+    setRoles(rows.map((r) => (typeof r === "string" ? r : r.role) as Role));
   };
 
   useEffect(() => {
