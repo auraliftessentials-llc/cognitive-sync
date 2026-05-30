@@ -26,22 +26,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadRoles = async (uid: string | undefined) => {
     if (!uid) return setRoles([]);
-    // Resolve to primary throne identity so linked alt emails inherit super_admin.
-    let primaryId = uid;
-    try {
-      const { data: resolved } = await supabase.rpc("resolve_operator_identity" as any, {
-        _user_id: uid,
-      });
-      if (resolved && typeof resolved === "string") primaryId = resolved;
-    } catch {
-      // fall back to raw uid if RPC unavailable
+    // Throne-aware: resolves linked operator emails to the primary super_admin.
+    const { data, error } = await supabase.rpc("get_operator_roles" as any, {
+      _user_id: uid,
+    });
+    if (error) {
+      // Fallback to direct read of own roles.
+      const { data: own } = await supabase
+        .from("user_roles" as any)
+        .select("role")
+        .eq("user_id", uid);
+      setRoles(((own as any[]) ?? []).map((r) => r.role as Role));
+      return;
     }
-    const ids = primaryId === uid ? [uid] : [uid, primaryId];
-    const { data } = await supabase
-      .from("user_roles" as any)
-      .select("role")
-      .in("user_id", ids);
-    setRoles(((data as any[]) ?? []).map((r) => r.role as Role));
+    const rows = (data as any[]) ?? [];
+    setRoles(rows.map((r) => (typeof r === "string" ? r : r.role) as Role));
   };
 
   useEffect(() => {
