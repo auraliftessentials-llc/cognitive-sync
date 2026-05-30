@@ -5,18 +5,23 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
-      { title: "Pricing — Cognitive Sync / MERKABAH OS" },
+      { title: "Pricing — MERKABAH OS · $49 / $199 / $999" },
       {
         name: "description",
         content:
-          "MERKABAH OS pricing — Operator, Architect, Sovereign. Paid access only. Trial requires a payment method on file. Built by Ryan Puddy, Aura Lift Essentials LLC.",
+          "MERKABAH OS pricing — Operator $49, Architect $199, Sovereign $999. Paid access only. Trial requires a payment method on file. Built by Ryan Puddy, Aura Lift Essentials LLC.",
       },
-      { property: "og:title", content: "Pricing — Cognitive Sync / MERKABAH OS" },
+      { property: "og:title", content: "Pricing — MERKABAH OS" },
       {
         property: "og:description",
         content: "Paid-only access. $49 Operator · $199 Architect · $999 Sovereign.",
       },
+      { property: "og:url", content: "https://cognitivesync.io/pricing" },
+      { property: "og:type", content: "product" },
+      { name: "twitter:title", content: "Pricing — MERKABAH OS" },
+      { name: "twitter:description", content: "$49 Operator · $199 Architect · $999 Sovereign." },
     ],
+    links: [{ rel: "canonical", href: "https://cognitivesync.io/pricing" }],
   }),
   component: PricingPage,
 });
