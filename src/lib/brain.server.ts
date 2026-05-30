@@ -233,23 +233,14 @@ export const PROVIDERS: Record<ProviderId, BrainProvider> = {
   },
 };
 
-// Order = priority. Direct providers first; Lovable gateway is final fallback.
-// Missing keys are skipped automatically.
+// MASTER MODE: xAI is the sole active provider per Operator directive (2026-05-30).
+// All other provider definitions remain intact (sacred code) — they're just
+// removed from the active fallback chain. To re-enable, add their ProviderId
+// back to this array.
 export const DEFAULT_FALLBACK_CHAIN: ProviderId[] = [
   "xai",
-  "xai-2",
-  "openai-direct",
-  "anthropic-direct",
-  "google-direct",
-  "deepseek",
-  "mistral",
-  "groq",
-  "together",
-  "perplexity-llm",
-  "openrouter",
-  "lovable-openai",
-  "lovable-google",
 ];
+
 
 /**
  * Extra Gemini models served direct via Google AI Studio (GEMINI_API_KEY).
