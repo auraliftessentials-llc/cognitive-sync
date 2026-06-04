@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,6 @@ import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
-  beforeLoad: () => {
-    throw redirect({ to: "/dashboard" });
-  },
   component: AuthPage,
 });
 
@@ -24,7 +21,8 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { if (user) nav({ to: "/dashboard" }); }, [user, nav]);
+  // Auth gate disabled — anyone hitting /auth goes straight to /dashboard.
+  useEffect(() => { nav({ to: "/dashboard", replace: true }); }, [nav]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
