@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TerminalRouteImport } from './routes/terminal'
 import { Route as SuggestionsRouteImport } from './routes/suggestions'
+import { Route as StatusRouteImport } from './routes/status'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RoadmapsRouteImport } from './routes/roadmaps'
 import { Route as ProjectsRouteImport } from './routes/projects'
@@ -62,6 +63,11 @@ const TerminalRoute = TerminalRouteImport.update({
 const SuggestionsRoute = SuggestionsRouteImport.update({
   id: '/suggestions',
   path: '/suggestions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatusRoute = StatusRouteImport.update({
+  id: '/status',
+  path: '/status',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -301,6 +307,7 @@ export interface FileRoutesByFullPath {
   '/projects': typeof ProjectsRoute
   '/roadmaps': typeof RoadmapsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/status': typeof StatusRoute
   '/suggestions': typeof SuggestionsRoute
   '/terminal': typeof TerminalRoute
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
@@ -347,6 +354,7 @@ export interface FileRoutesByTo {
   '/projects': typeof ProjectsRoute
   '/roadmaps': typeof RoadmapsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/status': typeof StatusRoute
   '/suggestions': typeof SuggestionsRoute
   '/terminal': typeof TerminalRoute
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
@@ -394,6 +402,7 @@ export interface FileRoutesById {
   '/projects': typeof ProjectsRoute
   '/roadmaps': typeof RoadmapsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/status': typeof StatusRoute
   '/suggestions': typeof SuggestionsRoute
   '/terminal': typeof TerminalRoute
   '/hooks/run-cli-schedules': typeof HooksRunCliSchedulesRoute
@@ -442,6 +451,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/roadmaps'
     | '/sitemap.xml'
+    | '/status'
     | '/suggestions'
     | '/terminal'
     | '/hooks/run-cli-schedules'
@@ -488,6 +498,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/roadmaps'
     | '/sitemap.xml'
+    | '/status'
     | '/suggestions'
     | '/terminal'
     | '/hooks/run-cli-schedules'
@@ -534,6 +545,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/roadmaps'
     | '/sitemap.xml'
+    | '/status'
     | '/suggestions'
     | '/terminal'
     | '/hooks/run-cli-schedules'
@@ -581,6 +593,7 @@ export interface RootRouteChildren {
   ProjectsRoute: typeof ProjectsRoute
   RoadmapsRoute: typeof RoadmapsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  StatusRoute: typeof StatusRoute
   SuggestionsRoute: typeof SuggestionsRoute
   TerminalRoute: typeof TerminalRoute
   HooksRunCliSchedulesRoute: typeof HooksRunCliSchedulesRoute
@@ -621,6 +634,13 @@ declare module '@tanstack/react-router' {
       path: '/suggestions'
       fullPath: '/suggestions'
       preLoaderRoute: typeof SuggestionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/status': {
+      id: '/status'
+      path: '/status'
+      fullPath: '/status'
+      preLoaderRoute: typeof StatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -941,6 +961,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsRoute: ProjectsRoute,
   RoadmapsRoute: RoadmapsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  StatusRoute: StatusRoute,
   SuggestionsRoute: SuggestionsRoute,
   TerminalRoute: TerminalRoute,
   HooksRunCliSchedulesRoute: HooksRunCliSchedulesRoute,
