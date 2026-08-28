@@ -154,6 +154,9 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function AuthHeaderInjector() {
+  // Swallow raw Response rejections from server fns (401 while auth gate is off)
+  useEffect(() => installServerFnErrorGuard(), []);
+
   // Inject auth token into all server-fn fetch requests
   useEffect(() => {
     const orig = window.fetch.bind(window);
