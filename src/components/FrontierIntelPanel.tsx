@@ -12,10 +12,10 @@ export function FrontierIntelPanel() {
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
-    try { setItems(await getFn()); } catch { /* ignore */ }
+    try { setItems(await getFn()); } catch { /* ignore (e.g. 401 while auth is off) */ }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { void load(); }, []);
 
   const scan = async () => {
     setBusy(true);
@@ -24,8 +24,11 @@ export function FrontierIntelPanel() {
       if (r.error) toast.error(`Scan: ${r.error}`);
       else toast.success(`Ingested ${r.inserted} new signals`);
       await load();
+    } catch (e: any) {
+      toast.error(e?.message ? `Scan failed: ${e.message}` : "Scan unavailable (sign-in required)");
     } finally { setBusy(false); }
   };
+
 
   return (
     <div className="rounded-lg border border-primary/20 bg-card">
