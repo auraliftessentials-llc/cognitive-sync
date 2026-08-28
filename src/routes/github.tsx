@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Github, Shield, CheckCircle2, KeyRound, RefreshCw } from "lucide-react";
 import { syncGithubRepos, getGithubTokenStatus, syncGithubUser } from "@/lib/github.functions";
+import { serverFnErrorMessage } from "@/lib/server-fn-error";
 import { toast } from "sonner";
 
 const LAST_SYNC_KEY = "github:last-synced-at";
