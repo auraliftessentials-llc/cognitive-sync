@@ -7,6 +7,7 @@ import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { CREATOR, getCreatorJsonLd, getDoctrineShortFingerprint } from "@/lib/creator";
+import { installServerFnErrorGuard } from "@/lib/server-fn-error";
 
 function NotFoundComponent() {
   return (
@@ -154,6 +155,9 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function AuthHeaderInjector() {
+  // Swallow raw Response rejections from server fns (401 while auth gate is off)
+  useEffect(() => installServerFnErrorGuard(), []);
+
   // Inject auth token into all server-fn fetch requests
   useEffect(() => {
     const orig = window.fetch.bind(window);
