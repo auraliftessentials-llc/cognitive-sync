@@ -70,10 +70,14 @@ export function RepublishBanner() {
       setHidden(true);
       if (acknowledge) setOpen(false);
       await refresh();
+    } catch {
+      // Auth off / offline — just hide locally instead of crashing the tree.
+      setHidden(true);
     } finally {
       setBusy(false);
     }
   };
+
 
   const stale = status?.staleProviders ?? [];
   const latest = status?.latest;
