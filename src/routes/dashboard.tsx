@@ -15,6 +15,7 @@ import { CEOVoiceHub } from "@/components/CEOVoiceHub";
 import { TrialBanner } from "@/components/TrialBanner";
 import { FrontierIntelPanel } from "@/components/FrontierIntelPanel";
 import { MissionControlPanel } from "@/components/MissionControl";
+import { ConnectorStatusPanel } from "@/components/ConnectorStatusPanel";
 
 export const Route = createFileRoute("/dashboard")({
   component: () => (
@@ -91,6 +92,8 @@ function Dashboard() {
       <TrialBanner />
 
       <div className="my-6"><MissionControlPanel /></div>
+
+      <div className="my-6"><ConnectorStatusPanel /></div>
 
       <CEOVoiceHub />
 
