@@ -28,6 +28,7 @@ import {
   type RevenueStatus,
 } from "@/lib/library.functions";
 import { syncGithubRepos, syncGithubUser } from "@/lib/github.functions";
+import { asArray, asRecord } from "@/lib/safe-data";
 
 export const Route = createFileRoute("/library")({
   component: () => (
@@ -58,15 +59,17 @@ const REVENUE_META: Record<RevenueStatus, { label: string; class: string }> = {
 };
 
 function Page() {
-  const { isSuperAdmin, loading } = useAuth();
+  const { isSuperAdmin, loading, session } = useAuth();
+  // Sign-in is currently bypassed: only bounce a signed-in non-admin.
+  const allowed = isSuperAdmin || !session;
   const nav = useNavigate();
   const [data, setData] = useState<Awaited<ReturnType<typeof getLibraryOverview>> | null>(null);
   const [busy, setBusy] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!loading && !isSuperAdmin) nav({ to: "/dashboard" });
-  }, [loading, isSuperAdmin, nav]);
+    if (!loading && !allowed) nav({ to: "/dashboard" });
+  }, [loading, allowed, nav]);
 
   const refresh = async () => {
     try {
@@ -78,8 +81,8 @@ function Page() {
   };
 
   useEffect(() => {
-    if (isSuperAdmin) void refresh();
-  }, [isSuperAdmin]);
+    if (allowed) void refresh();
+  }, [allowed]);
 
   const runSync = async () => {
     setBusy(true);
@@ -103,7 +106,7 @@ function Page() {
     }
   };
 
-  if (loading || !isSuperAdmin || !data) {
+  if (loading || !allowed || !data) {
     return (
       <div className="p-8 text-sm text-muted-foreground">
         Loading library cockpit…
@@ -111,7 +114,10 @@ function Page() {
     );
   }
 
-  const { groups, moneyFocus, privacyAudit, stats } = data;
+  const groups = (asRecord<Record<ProjectCategory, any[]>>((data as any).groups) ?? {}) as Partial<Record<ProjectCategory, any[]>>;
+  const moneyFocus = asArray<any>((data as any).moneyFocus);
+  const privacyAudit = asArray<any>((data as any).privacyAudit);
+  const stats = asRecord<Record<string, number>>((data as any).stats);
 
   return (
     <div className="p-8 max-w-7xl space-y-8">
@@ -138,11 +144,11 @@ function Page() {
 
       {/* Stats bar */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <Stat label="Total" value={stats.total} />
-        <Stat label="Public" value={stats.public} tone={stats.public > 0 ? "alert" : "ok"} />
-        <Stat label="Private" value={stats.private} tone="ok" />
-        <Stat label="Live" value={stats.live} />
-        <Stat label="Ready" value={stats.ready} />
+        <Stat label="Total" value={stats.total ?? 0} />
+        <Stat label="Public" value={stats.public ?? 0} tone={(stats.public ?? 0) > 0 ? "alert" : "ok"} />
+        <Stat label="Private" value={stats.private ?? 0} tone="ok" />
+        <Stat label="Live" value={stats.live ?? 0} />
+        <Stat label="Ready" value={stats.ready ?? 0} />
       </div>
 
       {/* Money Focus */}
@@ -158,7 +164,7 @@ function Page() {
           </p>
         ) : (
           <div className="grid gap-2">
-            {moneyFocus.map((p) => (
+            {moneyFocus.map((p: any) => (
               <div key={p.id} className="flex items-center justify-between gap-3 py-2 px-3 rounded bg-muted/20">
                 <div className="flex items-center gap-2 min-w-0">
                   <RevenuePill status={p.revenue_status} />
@@ -187,7 +193,7 @@ function Page() {
             <em>Settings → Change visibility → Private</em>. Once flipped, the next sync clears it from this list.
           </p>
           <div className="grid gap-1.5">
-            {privacyAudit.map((r) => (
+            {privacyAudit.map((r: any) => (
               <a
                 key={r.id}
                 href={`${r.repo_url}/settings`}
@@ -206,7 +212,7 @@ function Page() {
 
       {/* Category groups */}
       {(Object.keys(CATEGORY_META) as ProjectCategory[]).map((cat) => {
-        const items = groups[cat] ?? [];
+        const items = asArray<any>(groups[cat]);
         if (cat === "unclassified" && items.length === 0) return null;
         if (cat === "archive" && items.length === 0) return null;
         return (
@@ -221,7 +227,7 @@ function Page() {
               <p className="text-xs text-muted-foreground italic">No projects yet. Tag one below.</p>
             ) : (
               <div className="grid md:grid-cols-2 gap-3">
-                {items.map((p) => (
+                {items.map((p: any) => (
                   <ProjectCard
                     key={p.id}
                     p={p}
