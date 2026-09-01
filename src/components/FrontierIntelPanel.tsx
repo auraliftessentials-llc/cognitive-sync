@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { asArray } from "@/lib/safe-data";
 import { useServerFn } from "@tanstack/react-start";
 import { getRecentIntel, triggerFrontierScan, type IntelItem } from "@/lib/frontier-intel.functions";
 import { Sparkles, RefreshCw, ExternalLink } from "lucide-react";
@@ -12,7 +13,7 @@ export function FrontierIntelPanel() {
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
-    try { setItems(await getFn()); } catch { /* ignore (e.g. 401 while auth is off) */ }
+    try { setItems(asArray<IntelItem>(await getFn())); } catch { /* ignore (e.g. 401 while auth is off) */ }
   };
 
   useEffect(() => { void load(); }, []);
