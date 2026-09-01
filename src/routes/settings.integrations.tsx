@@ -18,6 +18,7 @@ import {
   testWebhook,
 } from "@/lib/webhooks.functions";
 import { exportCommandsCsv } from "@/lib/command-export.functions";
+import { asArray } from "@/lib/safe-data";
 
 export const Route = createFileRoute("/settings/integrations")({
   head: () => ({
@@ -64,8 +65,8 @@ function Integrations() {
   const refresh = async () => {
     try {
       const [h, d] = await Promise.all([list(), deliveries({ data: { limit: 30 } })]);
-      setHooks((h as any).webhooks);
-      setDeliv((d as any).deliveries);
+      setHooks(asArray<Hook>((h as any)?.webhooks));
+      setDeliv(asArray<any>((d as any)?.deliveries));
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to load");
     }
