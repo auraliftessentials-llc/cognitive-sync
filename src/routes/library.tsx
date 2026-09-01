@@ -59,15 +59,17 @@ const REVENUE_META: Record<RevenueStatus, { label: string; class: string }> = {
 };
 
 function Page() {
-  const { isSuperAdmin, loading } = useAuth();
+  const { isSuperAdmin, loading, session } = useAuth();
+  // Sign-in is currently bypassed: only bounce a signed-in non-admin.
+  const allowed = isSuperAdmin || !session;
   const nav = useNavigate();
   const [data, setData] = useState<Awaited<ReturnType<typeof getLibraryOverview>> | null>(null);
   const [busy, setBusy] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!loading && !isSuperAdmin) nav({ to: "/dashboard" });
-  }, [loading, isSuperAdmin, nav]);
+    if (!loading && !allowed) nav({ to: "/dashboard" });
+  }, [loading, allowed, nav]);
 
   const refresh = async () => {
     try {
@@ -79,8 +81,8 @@ function Page() {
   };
 
   useEffect(() => {
-    if (isSuperAdmin) void refresh();
-  }, [isSuperAdmin]);
+    if (allowed) void refresh();
+  }, [allowed]);
 
   const runSync = async () => {
     setBusy(true);
@@ -104,7 +106,7 @@ function Page() {
     }
   };
 
-  if (loading || !isSuperAdmin || !data) {
+  if (loading || !allowed || !data) {
     return (
       <div className="p-8 text-sm text-muted-foreground">
         Loading library cockpit…
